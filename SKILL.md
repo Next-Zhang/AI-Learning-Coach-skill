@@ -74,6 +74,8 @@ disable-model-invocation: true
 
 六件套持久层数据格式约定（含 frontmatter 元数据规范）见 [`resources/data-formats.md`](resources/data-formats.md)，写任何数据文件前先读它。初始模板见 [`templates/`](templates/)，初始化数据文件时按模板生成。
 
+来源检索用检索层脚本 [`scripts/retrieve.py`](scripts/retrieve.py)：输入查询 → 输出资料列表（标题/来源/摘要/链接），契约见 [`resources/retrieval-contract.md`](resources/retrieval-contract.md)；本地 `sources/` 结果不足时再用 `web_search` 补充并并入 `web_results` 字段。
+
 ## 上下文策略（ADR-0001）
 
 每个学习日新开一个会话；当日结束后旧会话归档不再加载。持久信息通过当日总结写入 `progress.md`；不要在本会话内延续上一日对话内容，需要历史时读 `progress.md` 与 `review/`。

@@ -1,0 +1,5 @@
+{
+  "query": "聚合",
+  "sources_dir": "../sources",
+  "limit": 10
+}

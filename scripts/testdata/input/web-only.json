@@ -1,0 +1,17 @@
+{
+  "query": "量子计算",
+  "sources_dir": "../sources",
+  "limit": 10,
+  "web_results": [
+    {
+      "title": "量子计算入门",
+      "source": "https://example.com/quantum",
+      "summary": "本地无结果时仅靠 web 补充。"
+    },
+    {
+      "title": "量子计算入门（重复）",
+      "source": "https://example.com/quantum/",
+      "summary": "与上一条同 URL，应被去重。"
+    }
+  ]
+}

@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# python-coach scripts：测试运行生成的输出目录
+scripts/testdata/_out/

@@ -1,0 +1,17 @@
+{
+  "query": "pandas",
+  "sources_dir": "../sources",
+  "limit": 10,
+  "web_results": [
+    {
+      "title": "Pandas Documentation",
+      "source": "https://pandas.pydata.org/docs/",
+      "summary": "pandas 官方文档主页。"
+    },
+    {
+      "title": "pandas Series 基础",
+      "source": "https://pandas.pydata.org/docs/reference/api/pandas.Series.html",
+      "summary": "与本地 sources/pandas-series.md 重复的结果，应被去重。"
+    }
+  ]
+}
