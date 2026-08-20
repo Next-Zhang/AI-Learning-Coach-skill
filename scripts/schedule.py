@@ -79,7 +79,8 @@ def _parse_row(line):
 def parse_schedule(text):
     """解析调度表文本 → 行列表 [{topic, mastery, next_date, interval}]。
 
-    无 frontmatter 也可解析；表格结束（出现非表格内容行）后停止。
+    无 frontmatter 也可解析；表格内空行透明跳过（手改留白不中断表格），
+    遇到真正的非表格内容行（如另一标题）才停止。
     """
     rows = []
     in_table = False
@@ -89,6 +90,8 @@ def parse_schedule(text):
             in_table = True
             continue
         if in_table:
+            if not stripped:
+                continue
             if not stripped.startswith("|"):
                 break
             row = _parse_row(stripped)
@@ -215,6 +218,13 @@ def _resolve_schedule_path(req, input_path):
     return path
 
 
+def _load_rows_or_empty(path):
+    """读调度表；文件不存在时视为空表（due / add 共用）。"""
+    if not Path(path).exists():
+        return []
+    return read_schedule(path)
+
+
 def run(input_path, output_path):
     """文件契约入口：读输入 JSON → 调度操作 → 写输出 JSON（add/record 另原地写调度表）。
 
@@ -234,12 +244,12 @@ def run(input_path, output_path):
         raise ValueError('输入缺少 op 字段（"due" / "add" / "record"）')
 
     if op == "due":
-        rows = [] if not schedule_path.exists() else read_schedule(schedule_path)
+        rows = _load_rows_or_empty(schedule_path)
         result = {"op": "due", "today": today, "due": due_rows(rows, today)}
     elif op == "add":
         topic = _require_topic(req)
         mastery = _clamp_mastery(req.get("mastery", DEFAULT_MASTERY))
-        rows = [] if not schedule_path.exists() else read_schedule(schedule_path)
+        rows = _load_rows_or_empty(schedule_path)
         if any(r["topic"] == topic for r in rows):
             raise ValueError(f"知识点已在调度表中：{topic}")
         new_row = {
@@ -251,10 +261,10 @@ def run(input_path, output_path):
         rows.append(new_row)
         write_schedule(schedule_path, rows, today)
         result = {"op": "add", "today": today, "topic": topic, "row": new_row}
-    else:  # record
+    else:  # op == "record"（op 已在上方校验为 due/add/record 三者之一）
         topic = _require_topic(req)
-        result_flag = req.get("result")
-        if result_flag not in ("pass", "fail"):
+        outcome = req.get("result")
+        if outcome not in ("pass", "fail"):
             raise ValueError('record 需要 result 字段（"pass" / "fail"）')
         if not schedule_path.exists():
             raise FileNotFoundError(f"调度表不存在：{schedule_path}")
@@ -262,14 +272,14 @@ def run(input_path, output_path):
         idx = next((i for i, r in enumerate(rows) if r["topic"] == topic), None)
         if idx is None:
             raise ValueError(f"知识点不在调度表中（先用 add 加入）：{topic}")
-        updated = apply_outcome(rows[idx], result_flag, today)
+        updated = apply_outcome(rows[idx], outcome, today)
         rows[idx] = updated
         write_schedule(schedule_path, rows, today)
         result = {
             "op": "record",
             "today": today,
             "topic": topic,
-            "result": result_flag,
+            "result": outcome,
             "row": updated,
         }
 

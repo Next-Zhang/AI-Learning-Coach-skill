@@ -49,7 +49,7 @@ disable-model-invocation: true
 - 每节课结束：生成复习快查文档一份（`review/NN-主题.md`），每个知识点一行：概念一句话 + 关键代码/示例 + 常见坑 + 来源引用。
 - 更新调度表 `review/schedule.md`：知识点 → 掌握度 → 下次复习日（新增知识点用 `add`、考察结果用 `record`）。
 - 间隔推进：1 天 → 3 天 → 7 天 → 15 天 → 30 天；考察通过推迟到下一档，未通过重置回 1 天。
-- 调度操作统一走脚本 [`scripts/schedule.py`](scripts/schedule.py)：查到期用 `op=due`、记录考察用 `op=record`、纳入新知识点用 `op=add`；契约见 [`resources/schedule-contract.md`](resources/schedule-contract.md)。
+- 调度操作统一走脚本 [`scripts/schedule.py`](scripts/schedule.py)：查到期用 `op=due`、记录考察用 `op=record`、纳入新知识点用 `op=add`；契约见 [`resources/schedule-contract.md`](resources/schedule-contract.md)。`add`/`record` 会改写 `review/schedule.md`，属持久层修改，执行前先经学习者确认（护栏 approval）。
 
 ## 护栏（rules / permission / approval 三层面）
 

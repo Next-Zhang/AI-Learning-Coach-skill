@@ -118,6 +118,14 @@ class DueTest(_ScheduleTest):
         result, _ = self._run("due-nofm.json", "due-nofm-out.json")
         self.assertEqual([r["topic"] for r in result["due"]], ["pandas.Series"])
 
+    def test_due_ignores_blank_lines_inside_table(self):
+        # 表格内空行透明跳过：空行后的行仍被解析，直到真正的非表格内容才停止
+        result, _ = self._run("due-spaced.json", "due-spaced-out.json")
+        self.assertEqual(
+            [r["topic"] for r in result["due"]],
+            ["pandas.Series", "pandas.DataFrame"],
+        )
+
 
 class RecordTest(_ScheduleTest):
     """op=record：记录一次考察结果，推进间隔并原地写回调度表。"""
@@ -211,6 +219,25 @@ class RecordTest(_ScheduleTest):
             self._read_file(SCHED_OUT / "record-nofm.md").startswith(
                 "---\nupdated: 2026-08-21\n---\n"
             )
+        )
+
+    def test_record_preserves_rows_after_blank_line(self):
+        # 表格内空行后的行不得在写回时被静默丢弃（容错 + 保持既有行的承诺）
+        self._copy_schedule("spaced.md", "record-spaced.md")
+        result, _ = self._run("record-spaced.json", "record-spaced-out.json")
+        self.assertEqual(result["row"]["interval"], 3)
+        self.assertEqual(
+            self._read_file(SCHED_OUT / "record-spaced.md"),
+            "---\n"
+            "updated: 2026-08-21\n"
+            "---\n"
+            "\n"
+            "# 复习调度表\n"
+            "\n"
+            "| 知识点 | 掌握度 | 下次复习日 | 当前间隔(天) |\n"
+            "| --- | --- | --- | --- |\n"
+            "| pandas.Series | 2.5/5 | 2026-08-24 | 3 |\n"
+            "| pandas.DataFrame | 3/5 | 2026-08-24 | 3 |\n",
         )
 
     def test_record_pass_chain_across_full_ladder(self):
