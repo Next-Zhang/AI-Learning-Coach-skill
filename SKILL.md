@@ -41,7 +41,7 @@ disable-model-invocation: true
 4. **难度反馈**：单独采集（太难 / 刚好 / 太简单），独立记录，不混入完成度分。
 5. **学习者确认**：展示结论与分数，学习者确认或质疑；确认后方可写总结。
    - 完成度合成走脚本 [`scripts/completion.py`](scripts/completion.py)：输入 agent 评分与自评 → 输出完成度分（7:3、0.5 档）与难度反馈；契约见 [`resources/completion-contract.md`](resources/completion-contract.md)。纯计算、不改写数据文件。
-6. **验收结果写回**：完成度 ≥ 4 的知识点 → 能力矩阵该知识点 +0.5（上限 5）。
+6. **验收结果写回**：完成度 ≥ 4 的知识点 → 能力矩阵该知识点 +0.5（上限 5）；走脚本 [`scripts/profile.py`](scripts/profile.py)（`op=acceptance`，同时记录难度反馈），契约见 [`resources/profile-contract.md`](resources/profile-contract.md)。会原地改写 `profile.md`，属持久层修改，执行前先经学习者确认（护栏 approval）。
 7. **当日总结**：写入 `progress.md`（见数据格式）；生成复习快查文档（见「复习机制」）。
 8. **网页清除**：总结写入后，提出删除当日网页，学习者确认后删除。
 
@@ -51,6 +51,7 @@ disable-model-invocation: true
 - 更新调度表 `review/schedule.md`：知识点 → 掌握度 → 下次复习日（新增知识点用 `add`、考察结果用 `record`）。
 - 间隔推进：1 天 → 3 天 → 7 天 → 15 天 → 30 天；考察通过推迟到下一档，未通过重置回 1 天。
 - 调度操作统一走脚本 [`scripts/schedule.py`](scripts/schedule.py)：查到期用 `op=due`、记录考察用 `op=record`、纳入新知识点用 `op=add`；契约见 [`resources/schedule-contract.md`](resources/schedule-contract.md)。`add`/`record` 会改写 `review/schedule.md`，属持久层修改，执行前先经学习者确认（护栏 approval）。
+- 复习考察得分同时写回能力矩阵，走 [`scripts/profile.py`](scripts/profile.py)（`op=review`，与调度表同一规则：通过 +0.5 上限 5、未通过 -0.5 下限 1）。
 
 ## 护栏（rules / permission / approval 三层面）
 
