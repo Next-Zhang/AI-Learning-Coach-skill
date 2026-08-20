@@ -1,0 +1,7 @@
+{
+  "today": "2026-08-21",
+  "schedule_path": "../_out/schedule/record-at-30.md",
+  "op": "record",
+  "topic": "pandas.DataFrame",
+  "result": "pass"
+}

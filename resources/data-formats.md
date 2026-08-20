@@ -182,6 +182,7 @@ updated: 2026-08-20
 - 考察通过 → 掌握度更新 + 下一档间隔（如 1→3）；未通过 → 掌握度下调 + 重置回 1 天。
 - agent 只查本表决定复习什么，不扫描 `review/` 全部文档（性能护栏）。
 - 掌握度与 `profile.md` 能力矩阵共用同一知识点 × 评分数据；本表是调度视图，矩阵是权威值。
+- 本表的读写与推进由脚本 `scripts/schedule.py` 实现（`due`/`add`/`record`，契约见 `resources/schedule-contract.md`）。
 
 ---
 

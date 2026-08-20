@@ -1,0 +1,7 @@
+{
+  "today": "2026-08-21",
+  "schedule_path": "../_out/schedule/record-nofm.md",
+  "op": "record",
+  "topic": "pandas.Series",
+  "result": "pass"
+}
