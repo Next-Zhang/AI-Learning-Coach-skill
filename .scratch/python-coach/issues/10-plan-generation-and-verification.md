@@ -4,9 +4,11 @@
 
 **Blocked by:** 02 — 检索层脚本；07 — Onboarding 问卷与画像初值；08 — 目标澄清与范围声明；09 — 摸底测试与能力矩阵
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] 计划草案生成（按天划分、含来源引用）
-- [ ] 独立评审 agent 三验证流程
-- [ ] 评审→修订→再评审循环
-- [ ] 评审通过后落盘 plan.md
+- [x] 计划草案生成（按天划分、含来源引用）——契约见 `resources/plan-contract.md` §3（天数/份量估算对齐画像、前置→核心→扩展排序、逐日目标清单/知识点/来源、检索记录存档）
+- [x] 独立评审 agent 三验证流程——§4（全新会话隔离、只读评审包裹、三份评审各自结论+问题清单、边界交叉检查）
+- [x] 评审→修订→再评审循环——§5（只改被指出项、轮次上限 3、超限降级不落盘）
+- [x] 评审通过后落盘 plan.md——§6（`status: active`、每日任务齐备、`page.py` 格式自检、approval 护栏）
+
+**验证：** 对话式 + 多 agent 流程不设自动化 seam（spec「测试 seam」），以**实际演练**验证——本次构建用**真实独立子代理**跑评审轮：草案（9 天，检索记录存档）→ 评审轮 1（真实 subagent：适配性有问题 1 条「视频偏好未满足」+ 合理性建议 2 条）→ 修订（补视频来源、调 Day 7 份量、Day 5 顺序说明）→ 评审轮 2（真实 subagent：三份全通过、上轮问题全解决）→ 落盘 `plan.md`（`status: active`）→ `page.py` 全部 9 天自检通过（汇总见 `rehearsal-10/page-check-all.json`）。产物存于 `.scratch/python-coach/rehearsal-10/`；详细演练记录见 `resources/plan-contract.md` §8。
