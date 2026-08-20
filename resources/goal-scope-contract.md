@@ -16,7 +16,7 @@
 
 - 起步流程第 1 步（onboarding 问卷，ticket 07）已收集「学习目标」答案并写入 `profile.md`。本流程**以此答案为起点**，先读 `profile.md` 的「学习目标」展示给学习者，而不是从零问起。
 - 开场示例："你在问卷里说『…』。接下来我们把它说具体，并划出这次学习覆盖、不涉及的范围。"
-- 若澄清后最终目标与画像表述有实质差异（不只是措辞），向学习者说明，并询问是否重跑 onboarding 问卷（`profile.py` `op=onboarding`，8 题重答）同步更新画像；学习者拒绝则保留画像原值，`plan.md` 的 `goal` 以澄清后的最终目标为准（计划锚点以 `plan.md` 为权威，见 `data-formats.md` §1）。
+- `plan.md` 的 `goal` 以澄清后的最终目标为准（计划锚点以 `plan.md` 为权威，见 `data-formats.md` §1）；画像「学习目标」保留 onboarding 原值即可，两者用途不同，本流程不引入同步机制。
 
 ## 3. 目标澄清对话（一句话目标）
 
@@ -52,31 +52,11 @@
 
 ## 6. 写入 plan.md 草案
 
-确认后写入 `plan.md` 草案，格式严格遵循 `resources/data-formats.md` §1 与 `templates/plan.md`：
+确认后写入 `plan.md` 草案：**按 [`templates/plan.md`](../templates/plan.md) 生成**（该模板即草案形态），格式以 `resources/data-formats.md` §1 为权威约定，本契约只规定写入语义：
 
-```markdown
----
-goal: 用 Python 处理 Excel 报表并做数据分析
-scope_covered: [语法基础, 数据分析（pandas）, Excel 处理, 数据可视化]
-scope_excluded: [Web 框架, 网络爬虫]
-status: draft
-created: 2026-08-20
-updated: 2026-08-20
----
-
-# 学习计划
-
-## 每日任务
-
-（草案：目标与范围声明已确认；每日任务清单由计划生成阶段填充，落盘时 status 置为 active。）
-```
-
-**约定：**
-
-- `goal` 为 §3 定稿的一句话目标；`scope_covered` / `scope_excluded` 为 §4–§5 确认的清单。数组格式 `[a, b]`，**数组内用英文逗号（`,`）分隔**（与 `page.py` 的 `_parse_list` 解析规则一致，见 `resources/page-contract.md` §5），支持裸字符串或数组。
-- `status: draft` 表示计划为草案（本阶段写入）；计划落盘（ticket 10 评审通过）时置为 `active`。`created`/`updated` 取当天日期 `YYYY-MM-DD`。
+- frontmatter 锚点：`goal` 为 §3 定稿的一句话目标；`scope_covered` / `scope_excluded` 为 §4–§5 确认的清单（数组 `[a, b]`，**数组内用英文逗号（`,`）分隔**，与 `page.py` 的 `_parse_list` 解析规则一致，见 `resources/page-contract.md` §5）；`status: draft` 表示草案，计划落盘（ticket 10 评审通过）时置为 `active`；`created`/`updated` 取当天日期 `YYYY-MM-DD`。
 - 正文只保留 `# 学习计划` 与空的 `## 每日任务`（占位说明），**不写任何 Day 区块**（每日任务属 ticket 10）。
-- **覆盖语义**：`plan.md` 已存在（学习者重走起步流程）时，只改写 frontmatter 的 `goal` / `scope_covered` / `scope_excluded` / `status` / `updated`，正文（每日任务）保持原样不动——若原计划 `status` 为 `active`（已落盘），先向学习者说明"重走起步会把已落盘计划降回草案，每日任务保留但需按新范围重新生成"，确认后才写。
+- **覆盖语义**：`plan.md` 已存在（学习者重走起步流程）时，先说明将重写目标与范围并置回草案、每日任务需按新范围重新生成，学习者确认后才写；只改写上述锚点字段，正文（每日任务）保留原样。
 - **approval 护栏**：`plan.md` 属持久层六件套，写入/改写前先经学习者确认（SKILL.md 护栏 approval）。
 
 ## 7. 边界与护栏
@@ -90,5 +70,5 @@ updated: 2026-08-20
 ## 8. 验证方式
 
 - 本流程为对话式流程，按 spec「测试 seam」**不设自动化 seam**，构建后通过**实际演练验证**：模拟学习者澄清对话（含一次模糊目标追问）→ 圈定/确认范围 → 写入草案 → 检查 `plan.md` 原文（frontmatter `goal`/`scope_covered`/`scope_excluded`/`status: draft` + 空每日任务）→ 按 `page.py` 的 frontmatter 解析规则（`resources/page-contract.md` §5）人工核对可解析。
-- **演练记录（2026-08-20，ticket 08 构建时）**：模拟对话——起点为画像「学习目标：用 Python 做数据分析」（先答模糊，被追问"具体处理什么数据？"后澄清为"用 Python 处理 Excel 报表并做数据分析"）→ 圈定覆盖 `语法基础`（前置，自评 2 故保留）、`数据分析（pandas）`、`Excel 处理`、`数据可视化`（学习者确认）→ 排除 `Web 框架`、`网络爬虫` → 学习者确认范围 → 写入 `plan.md` 草案（`status: draft`，空每日任务）→ 检查原文：frontmatter `goal`/`scope_covered`/`scope_excluded`/`status` 齐全（含 `created`/`updated`）、正文无 Day 区块，符合 §6 预期；草案文件经 `page.py` frontmatter 解析规则核对可解析（`goal` 字符串、`scope_covered`/`scope_excluded` 数组）。
+- **演练记录（2026-08-20，ticket 08 构建时）**：模拟对话——起点为画像「学习目标：用 Python 做数据分析」（先答模糊，被追问"具体处理什么数据？"后澄清为"用 Python 处理 Excel 报表并做数据分析"）→ 圈定覆盖 `语法基础`（前置，自评 2 故保留）、`数据分析（pandas）`、`Excel 处理`、`数据可视化`（学习者确认）→ 排除 `Web 框架`、`网络爬虫` → 学习者确认范围 → 写入 `plan.md` 草案（`status: draft`，空每日任务）→ 检查原文：frontmatter `goal`/`scope_covered`/`scope_excluded`/`status` 齐全（含 `created`/`updated`）、正文无 Day 区块，符合 §6 预期；草案文件经 `page.py` frontmatter 解析规则核对可解析（`goal` 字符串、`scope_covered`/`scope_excluded` 数组）。**转写摘录**：教练"你在问卷里说『用 Python 做数据分析』——具体想处理什么数据、产出什么？" → 学习者"处理 Excel 报表，还要做图表分析" → 教练"所以目标定为『用 Python 处理 Excel 报表并做数据分析』，对吗？" → 学习者"对"（定稿）。
 - 草案的格式兼容性（frontmatter 解析）另有 `scripts/test_page.py` 的 plan.md 解析测试兜底（`resources/page-contract.md` §6）。
