@@ -1,0 +1,14 @@
+{
+  "op": "generate",
+  "review_path": "../_out/review",
+  "course": 6,
+  "title": "非法知识点名",
+  "date": "2026-08-26",
+  "points": [
+    {
+      "topic": "坏|知识点",
+      "concept": "知识点名含竖线会破坏表格",
+      "source": "sources/python-basics.md"
+    }
+  ]
+}

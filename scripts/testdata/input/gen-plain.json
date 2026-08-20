@@ -1,0 +1,18 @@
+{
+  "op": "generate",
+  "review_path": "../_out/review",
+  "course": 4,
+  "title": "数据读取与筛选",
+  "date": "2026-08-24",
+  "topics": ["数据读取与筛选"],
+  "points": [
+    {
+      "topic": "布尔筛选",
+      "concept": "按布尔掩码取行",
+      "example": "df[df['列'] > 100]",
+      "pitfall": "链式索引赋值不生效，改用 loc",
+      "source": "https://pandas.pydata.org/docs/user_guide/indexing.html",
+      "mastery": 3.5
+    }
+  ]
+}

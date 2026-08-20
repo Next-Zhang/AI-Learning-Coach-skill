@@ -1,0 +1,15 @@
+{
+  "op": "generate",
+  "review_path": "../_out/review",
+  "course": 6,
+  "title": "topics 非数组",
+  "date": "2026-08-26",
+  "topics": "不是数组",
+  "points": [
+    {
+      "topic": "知识点",
+      "concept": "topics 类型非法",
+      "source": "sources/python-basics.md"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "op": "generate",
+  "review_path": "../_out/review",
+  "course": 6,
+  "title": "points 元素非对象",
+  "date": "2026-08-26",
+  "points": [
+    "不是对象"
+  ]
+}

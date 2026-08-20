@@ -1,0 +1,8 @@
+{
+  "op": "generate",
+  "review_path": "../_out/review",
+  "course": 6,
+  "title": "points 非数组",
+  "date": "2026-08-26",
+  "points": "不是数组"
+}

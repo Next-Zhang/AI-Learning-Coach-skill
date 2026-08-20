@@ -1,0 +1,13 @@
+{
+  "op": "generate",
+  "review_path": "../_out/review",
+  "course": 6,
+  "title": "缺来源的课程",
+  "date": "2026-08-26",
+  "points": [
+    {
+      "topic": "无来源知识点",
+      "concept": "这条没有来源引用"
+    }
+  ]
+}

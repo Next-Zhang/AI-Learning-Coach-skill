@@ -1,0 +1,25 @@
+{
+  "op": "generate",
+  "review_path": "../_out/review",
+  "course": 3,
+  "title": "pandas Series 与 DataFrame",
+  "date": "2026-08-23",
+  "topics": ["pandas.Series", "pandas.DataFrame"],
+  "points": [
+    {
+      "topic": "Series",
+      "concept": "一维带标签数组",
+      "example": "s = pd.Series([1, 2, 3])",
+      "pitfall": "索引不连续时 s[0] 按位置取，标签恰为 0 时按标签取，易混；优先用 s.iloc[0] / s.loc[0]",
+      "source": "sources/pandas-series.md"
+    },
+    {
+      "topic": "DataFrame",
+      "concept": "二维表，由 Series 组成",
+      "example": "pd.DataFrame({'a': [1, 2], 'b': [3, 4]})",
+      "pitfall": "列名大小写敏感；df['缺列'] 报 KeyError",
+      "source": "sources/pandas-series.md",
+      "mastery": 3.0
+    }
+  ]
+}

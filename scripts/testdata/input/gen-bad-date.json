@@ -1,0 +1,14 @@
+{
+  "op": "generate",
+  "review_path": "../_out/review",
+  "course": 6,
+  "title": "非法日期",
+  "date": "2026/08/26",
+  "points": [
+    {
+      "topic": "知识点",
+      "concept": "date 格式非法",
+      "source": "sources/python-basics.md"
+    }
+  ]
+}

@@ -163,6 +163,7 @@ topics: [pandas, groupby]
 - 每个知识点一行：概念一句话 + 关键代码/示例 + 常见坑 + 来源引用。
 - 用户可读优先：术语用中文解释，代码简短可运行。
 - 支持按知识点（`topics`）、按日期（`date`）直接查阅；agent 依据它出题考察。
+- 每节课结束的生成（`review/NN-主题.md`）与按知识点/日期查阅由脚本 `scripts/review.py` 实现（`generate` / `query`，契约见 `resources/review-contract.md`）；新知识点纳入调度表由 `generate` 输出的 `schedule_add` 接 `scripts/schedule.py`（`op=add`）完成。
 
 ---
 

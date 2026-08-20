@@ -1,0 +1,13 @@
+{
+  "op": "generate",
+  "review_path": "../_out/review",
+  "course": 6,
+  "date": "2026-08-26",
+  "points": [
+    {
+      "topic": "知识点",
+      "concept": "缺 title",
+      "source": "sources/python-basics.md"
+    }
+  ]
+}

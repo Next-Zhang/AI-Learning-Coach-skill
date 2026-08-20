@@ -1,0 +1,16 @@
+{
+  "op": "generate",
+  "review_path": "../_out/review",
+  "course": 3,
+  "title": "pandas Series 与 DataFrame",
+  "date": "2026-08-24",
+  "topics": ["pandas.Series", "pandas.DataFrame"],
+  "overwrite": true,
+  "points": [
+    {
+      "topic": "Series",
+      "concept": "一维带标签数组（重写版）",
+      "source": "sources/pandas-series.md"
+    }
+  ]
+}

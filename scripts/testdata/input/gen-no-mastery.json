@@ -1,0 +1,17 @@
+{
+  "op": "generate",
+  "review_path": "../_out/review",
+  "course": 5,
+  "title": "Excel 读写",
+  "date": "2026-08-25",
+  "topics": ["Excel 读写"],
+  "points": [
+    {
+      "topic": "读取 Excel",
+      "concept": "用 pandas 读取 Excel 工作表",
+      "example": "df = pd.read_excel('报表.xlsx', sheet_name='明细')",
+      "pitfall": "未装 openpyxl 报 ImportError",
+      "source": "https://pandas.pydata.org/docs/user_guide/io.html"
+    }
+  ]
+}

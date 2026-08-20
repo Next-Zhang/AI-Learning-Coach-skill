@@ -1,0 +1,14 @@
+{
+  "op": "generate",
+  "review_path": "../_out/review",
+  "course": 200,
+  "title": "课程编号越界",
+  "date": "2026-08-26",
+  "points": [
+    {
+      "topic": "知识点",
+      "concept": "course 必须 1–99",
+      "source": "sources/python-basics.md"
+    }
+  ]
+}
