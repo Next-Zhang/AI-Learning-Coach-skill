@@ -1,0 +1,17 @@
+{
+  "plan_path": "../plan/basic.md",
+  "day": "Day 1",
+  "output_dir": "../_out/page",
+  "knowledge": [
+    {
+      "topic": "pandas.Series",
+      "concept": "Series 是一维带标签数组，概念来自检索层提炼。",
+      "example": "s = pd.Series([1, 2, 3])\nprint(s.sum())"
+    },
+    {
+      "topic": "pandas.DataFrame",
+      "concept": "DataFrame 是二维表格结构。",
+      "example": "df = pd.DataFrame({'a': [1, 2]})"
+    }
+  ]
+}
