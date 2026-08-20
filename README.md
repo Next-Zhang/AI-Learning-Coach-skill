@@ -1,4 +1,4 @@
-# AI-Learning-Coach-skill
+# python-coach
 一个 ai 学习助手工具（skill 阶段）：**python-coach** —— AI 学习教练。
 
 ## 结构
