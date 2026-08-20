@@ -6,8 +6,10 @@
 
 输入输出格式、更新规则与用法见 ../resources/profile-contract.md。
 
-三种操作（输入文件 op 字段）：
+四种操作（输入文件 op 字段）：
 - onboarding：onboarding 问卷结果（8 题）写入画像初值；画像文件不存在时创建；
+- placement：摸底测试结果（知识点 × 水平分）初始化能力矩阵（来源「摸底测试」）；
+  画像文件不存在时创建；results 内知识点行整体覆盖，其余行保留；
 - acceptance：记录一次验收结果（完成度 + 难度反馈）→ 能力矩阵增量修正
   （完成度 ≥ 4 → 该知识点 +0.5，上限 5；难度反馈独立记录，不改变矩阵数值）；
 - review：记录一次复习考察结果 → 能力矩阵写回（通过 +0.5 上限 5；
@@ -18,6 +20,7 @@
 难度反馈只影响后续计划难度档位）。
 """
 import json
+import math
 import sys
 from datetime import date, datetime
 from pathlib import Path
@@ -28,6 +31,7 @@ PASS_DELTA = 0.5            # 验收高分 / 复习通过 的增量
 FAIL_DELTA = 0.5            # 复习未通过 的减量
 LEVEL_MIN = 1.0
 LEVEL_MAX = 5.0
+PLACEMENT_SOURCE = "摸底测试"  # 摸底初始矩阵的「来源」列与日志事件名
 # 难度反馈封闭集合（独立记录，不参与矩阵数值）
 DIFFICULTY_LEVELS = ("太难", "刚好", "太简单")
 
@@ -79,6 +83,15 @@ def _clamp_level(value, field):
     return min(LEVEL_MAX, max(LEVEL_MIN, level))
 
 
+def _round_half(value):
+    """水平分规范到 0.5 档（半向上舍入，如 2.25 → 2.5、2.75 → 3.0）。
+
+    能力矩阵的水平分统一按 0.5 档记录（增量 ±0.5 同档）；
+    摸底合成结果经本函数兜底规范化，保证矩阵行格式稳定。
+    """
+    return math.floor(value * 2 + 0.5) / 2
+
+
 def _parse_date(value):
     """date 字段：缺省取系统日期；显式值必须为 YYYY-MM-DD（自动规范补零）。"""
     if value is None:
@@ -92,7 +105,7 @@ def _parse_date(value):
 def _require_topic(req):
     topic = req.get("topic")
     if not isinstance(topic, str) or not topic.strip():
-        raise ValueError("acceptance/review 需要非空 topic 字段")
+        raise ValueError("需要非空 topic 字段（acceptance/review/placement）")
     topic = topic.strip()
     if "|" in topic or "\n" in topic:
         raise ValueError("知识点名不能包含 | 或换行（表格格式约束）")
@@ -239,13 +252,13 @@ def write_profile(path, data, updated):
 
 
 def _load_profile_or_empty(path):
-    """读画像；文件不存在时视为空画像（onboarding 首次创建场景共用）。"""
+    """读画像；文件不存在时视为空画像（onboarding/placement 首次创建场景共用）。"""
     if not Path(path).exists():
         return parse_profile("")
     return read_profile(path)
 
 
-# --- 三种操作 ---
+# --- 四种操作 ---
 
 
 def _find_topic(data, topic):
@@ -329,6 +342,64 @@ def _run_onboarding(req, data, day):
     return {"answers": normalized, "created": data["created"] or day, "updated": day}
 
 
+def _run_placement(req, data, day):
+    """placement：摸底测试结果（知识点 × 水平分）初始化能力矩阵。
+
+    results = [{topic, score}]；topic 须非空且不重复，score 为数字（[1, 5] 截断
+    + 0.5 档舍入兜底）。results 内知识点行整体按新值覆盖（来源「摸底测试」、
+    日期 = day），其余行保留；日志追加一条「摸底测试 → 初始矩阵」。
+    """
+    results = req.get("results")
+    if not isinstance(results, list) or not results:
+        raise ValueError("placement 需要非空 results 数组（[{topic, score}]）")
+    entries = []
+    seen = set()
+    for item in results:
+        if not isinstance(item, dict):
+            raise ValueError("placement 的 results 元素必须是对象（{topic, score}）")
+        topic = _require_topic(item)
+        if topic in seen:
+            raise ValueError(f"placement 的 results 含重复知识点：{topic}")
+        seen.add(topic)
+        entries.append(
+            {
+                "topic": topic,
+                "level": _round_half(_clamp_level(item.get("score"), "score")),
+                "date": day,
+                "source": PLACEMENT_SOURCE,
+            }
+        )
+
+    for entry in entries:
+        idx = next(
+            (i for i, r in enumerate(data["matrix"]) if r["topic"] == entry["topic"]),
+            None,
+        )
+        if idx is None:
+            data["matrix"].append(entry)
+        else:
+            data["matrix"][idx] = entry
+
+    log_entry = f"- {day}：{PLACEMENT_SOURCE} → 初始矩阵"
+    data["log"].append(log_entry)
+    # 输出视图与矩阵行同源（矩阵行键为 level，输出契约键为 score）
+    matrix = [
+        {
+            "topic": entry["topic"],
+            "score": entry["level"],
+            "date": entry["date"],
+            "source": entry["source"],
+        }
+        for entry in entries
+    ]
+    return {
+        "matrix": matrix,
+        "count": len(matrix),
+        "created": data["created"] or day,
+        "log_entry": log_entry,
+    }
+
+
 def _run_acceptance(req, data, day):
     """acceptance：验收完成度 ≥ 4 → 知识点 +0.5（上限 5）；难度反馈入日志不改矩阵。"""
     topic = _require_topic(req)
@@ -377,9 +448,10 @@ def run(input_path, output_path):
     """文件契约入口：读输入 JSON → 画像更新 → 写输出 JSON（并原地改写画像文件）。
 
     输入字段：date（可选，默认系统日期）、profile_path（可选，默认 "profile.md"，
-    相对路径以输入文件所在目录为基准）、op（必填："onboarding" | "acceptance" |
-    "review"）；onboarding 另需 answers（8 题），acceptance 另需 topic/score
-    （difficulty/source 可选），review 另需 topic/result。
+    相对路径以输入文件所在目录为基准）、op（必填："onboarding" | "placement" |
+    "acceptance" | "review"）；onboarding 另需 answers（8 题），placement 另需
+    results（[{topic, score}]），acceptance 另需 topic/score（difficulty/source
+    可选），review 另需 topic/result。
     """
     input_path = Path(input_path)
     req = json.loads(input_path.read_text(encoding="utf-8"))
@@ -388,22 +460,24 @@ def run(input_path, output_path):
     day = _parse_date(req.get("date"))
     profile_path = _resolve_profile_path(req, input_path)
     op = req.get("op")
-    if op not in ("onboarding", "acceptance", "review"):
+    handlers = {
+        "onboarding": _run_onboarding,
+        "placement": _run_placement,
+        "acceptance": _run_acceptance,
+        "review": _run_review,
+    }
+    if op not in handlers:
         raise ValueError(
-            '输入缺少 op 字段（"onboarding" / "acceptance" / "review"）'
+            "输入缺少 op 字段（" + " / ".join(f'"{k}"' for k in handlers) + "）"
         )
 
-    if op == "onboarding":
+    if op in ("onboarding", "placement"):
         data = _load_profile_or_empty(profile_path)
-        result = _run_onboarding(req, data, day)
     else:
         if not profile_path.exists():
             raise FileNotFoundError(f"画像文件不存在：{profile_path}")
         data = read_profile(profile_path)
-        if op == "acceptance":
-            result = _run_acceptance(req, data, day)
-        else:
-            result = _run_review(req, data, day)
+    result = handlers[op](req, data, day)
 
     write_profile(profile_path, data, day)
     out = {"op": op, "date": day, **result}

@@ -1,0 +1,9 @@
+{
+  "date": "2026-08-20",
+  "profile_path": "../_out/profile/placement-up.md",
+  "op": "placement",
+  "results": [
+    { "topic": "pandas.Series", "score": 2.5 },
+    { "topic": "pandas.DataFrame", "score": 3 }
+  ]
+}

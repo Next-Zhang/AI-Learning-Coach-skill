@@ -1,0 +1,17 @@
+{
+  "op": "placement",
+  "date": "2026-08-20",
+  "profile_path": "profile.md",
+  "results": [
+    { "topic": "变量与数据类型", "score": 1.5 },
+    { "topic": "条件与循环", "score": 1 },
+    { "topic": "函数", "score": 1 },
+    { "topic": "pandas.Series", "score": 1.5 },
+    { "topic": "pandas.DataFrame", "score": 1 },
+    { "topic": "数据读取与筛选", "score": 2.5 },
+    { "topic": "Excel 读写", "score": 3 },
+    { "topic": "数据清洗", "score": 1.5 },
+    { "topic": "matplotlib 基础绘图", "score": 4 },
+    { "topic": "图表定制", "score": 1.5 }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "date": "2026-08-20",
+  "profile_path": "../_out/profile/placement-dup.md",
+  "op": "placement",
+  "results": [
+    { "topic": "语法基础", "score": 2 },
+    { "topic": "语法基础", "score": 3 }
+  ]
+}

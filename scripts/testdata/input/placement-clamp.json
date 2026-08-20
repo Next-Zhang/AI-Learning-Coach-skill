@@ -1,0 +1,11 @@
+{
+  "date": "2026-08-20",
+  "profile_path": "../_out/profile/placement-clamp.md",
+  "op": "placement",
+  "results": [
+    { "topic": "变量与数据类型", "score": 0.2 },
+    { "topic": "pandas.Series", "score": 5.3 },
+    { "topic": "函数", "score": 2.75 },
+    { "topic": "Excel 读写", "score": 2.25 }
+  ]
+}

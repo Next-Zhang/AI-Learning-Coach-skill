@@ -9,7 +9,7 @@
 更新规则与契约见 ../resources/profile-contract.md。
 运行：python scripts/test_profile.py
 注意：沙箱下 tempfile 不可写，测试全部使用静态夹具（testdata/）与
-固定输出目录（testdata/_out/）；三种操作都会原地改写画像文件，
+固定输出目录（testdata/_out/）；四种操作都会原地改写画像文件，
 因此涉及写回的用例先把夹具复制到 testdata/_out/profile/ 再运行。
 """
 import json
@@ -453,6 +453,125 @@ class ReviewTest(_ProfileTest):
             )
 
 
+class PlacementTest(_ProfileTest):
+    """op=placement：摸底测试结果初始化能力矩阵。"""
+
+    def test_placement_creates_profile_and_matrix(self):
+        # 画像尚不存在 → placement 创建画像：初始矩阵行（来源「摸底测试」）+ 日志一条
+        result, out = self._run("placement-first.json", "placement-first-out.json")
+        self.assertEqual(result["op"], "placement")
+        self.assertEqual(result["date"], "2026-08-20")
+        self.assertEqual(result["count"], 4)
+        self.assertEqual(
+            result["matrix"][0],
+            {"topic": "变量与数据类型", "score": 1.5, "date": "2026-08-20", "source": "摸底测试"},
+        )
+        self.assertEqual(result["log_entry"], "- 2026-08-20：摸底测试 → 初始矩阵")
+        self.assertEqual(json.loads(out.read_text(encoding="utf-8")), result)
+        # 写盘原文：4 行矩阵、空问卷占位、日志一条、frontmatter 补齐
+        text = self._read_file(PROFILE_OUT / "placement-first.md")
+        self.assertTrue(
+            text.startswith("---\ncreated: 2026-08-20\nupdated: 2026-08-20\n---\n")
+        )
+        self.assertIn("## Onboarding 问卷（8 题）\n- 学习目标：\n", text)
+        self.assertIn(
+            MATRIX_HEAD
+            + "| 变量与数据类型 | 1.5 | 2026-08-20 | 摸底测试 |\n"
+            + "| 条件与循环 | 1 | 2026-08-20 | 摸底测试 |\n"
+            + "| pandas.Series | 1.5 | 2026-08-20 | 摸底测试 |\n"
+            + "| 数据读取与筛选 | 2.5 | 2026-08-20 | 摸底测试 |\n",
+            text,
+        )
+        self.assertTrue(
+            text.endswith("## 增量记录\n- 2026-08-20：摸底测试 → 初始矩阵\n")
+        )
+
+
+    def test_placement_upserts_existing_rows(self):
+        # basic.md 副本：results 内知识点行按新值覆盖（来源改「摸底测试」、日期更新），
+        # 其余行保留，问卷保留，日志追加一条
+        self._copy_profile("basic.md", "placement-up.md")
+        result, _ = self._run("placement-up.json", "placement-up-out.json")
+        self.assertEqual(result["count"], 2)
+        self.assertEqual(result["matrix"][0]["score"], 2.5)
+        self.assertEqual(result["matrix"][1]["score"], 3.0)
+        text = self._read_file(PROFILE_OUT / "placement-up.md")
+        self.assertIn("- 学习目标：用 Python 做数据分析\n", text)
+        self.assertIn("| pandas.Series | 2.5 | 2026-08-20 | 摸底测试 |", text)
+        self.assertIn("| pandas.DataFrame | 3 | 2026-08-20 | 摸底测试 |", text)
+        self.assertTrue(
+            text.endswith(
+                "## 增量记录\n"
+                "- 2026-08-20：摸底测试 → 初始矩阵\n"
+                "- 2026-08-20：摸底测试 → 初始矩阵\n"
+            )
+        )
+        self.assertIn("updated: 2026-08-20", text)
+
+    def test_placement_rounds_and_clamps(self):
+        # 水平分兜底规范化：0.2 → 1（下限截断）、5.3 → 5（上限截断）、
+        # 2.75 → 3（半向上）、2.25 → 2.5
+        result, _ = self._run("placement-clamp.json", "placement-clamp-out.json")
+        by_topic = {row["topic"]: row["score"] for row in result["matrix"]}
+        self.assertEqual(by_topic["变量与数据类型"], 1.0)
+        self.assertEqual(by_topic["pandas.Series"], 5.0)
+        self.assertEqual(by_topic["函数"], 3.0)
+        self.assertEqual(by_topic["Excel 读写"], 2.5)
+        text = self._read_file(PROFILE_OUT / "placement-clamp.md")
+        self.assertIn("| 变量与数据类型 | 1 | 2026-08-20 | 摸底测试 |", text)
+        self.assertIn("| pandas.Series | 5 | 2026-08-20 | 摸底测试 |", text)
+        self.assertIn("| 函数 | 3 | 2026-08-20 | 摸底测试 |", text)
+        self.assertIn("| Excel 读写 | 2.5 | 2026-08-20 | 摸底测试 |", text)
+
+    def test_placement_duplicate_topic_raises(self):
+        with self.assertRaises(ValueError):
+            profile.run(
+                INPUTS / "placement-dup.json", self._out("placement-dup-out.json")
+            )
+
+    def test_placement_no_results_raises(self):
+        with self.assertRaises(ValueError):
+            profile.run(
+                INPUTS / "placement-no-results.json",
+                self._out("placement-nores-out.json"),
+            )
+
+    def test_placement_empty_results_raises(self):
+        with self.assertRaises(ValueError):
+            profile.run(
+                INPUTS / "placement-empty-results.json",
+                self._out("placement-empty-out.json"),
+            )
+
+    def test_placement_not_list_raises(self):
+        with self.assertRaises(ValueError):
+            profile.run(
+                INPUTS / "placement-not-list.json",
+                self._out("placement-notlist-out.json"),
+            )
+
+    def test_placement_bad_element_raises(self):
+        with self.assertRaises(ValueError):
+            profile.run(
+                INPUTS / "placement-bad-element.json",
+                self._out("placement-badelem-out.json"),
+            )
+
+    def test_placement_missing_topic_raises(self):
+        with self.assertRaises(ValueError):
+            profile.run(
+                INPUTS / "placement-bad-topic.json",
+                self._out("placement-badtopic-out.json"),
+            )
+
+    def test_placement_bad_score_raises(self):
+        with self.assertRaises(ValueError):
+            profile.run(
+                INPUTS / "placement-bad-score.json",
+                self._out("placement-badscore-out.json"),
+            )
+
+
 class ErrorTest(_ProfileTest):
     """输入错误处理。"""
 
@@ -503,6 +622,17 @@ class CliTest(_ProfileTest):
         self.assertTrue(out.exists())
         self.assertEqual(
             json.loads(out.read_text(encoding="utf-8"))["new_score"], 2.0
+        )
+
+    def test_main_placement_writes_output(self):
+        out = self._out("cli-placement-out.json")
+        code = profile.main(
+            [str(INPUTS / "placement-first.json"), str(out)]
+        )
+        self.assertEqual(code, 0)
+        self.assertTrue(out.exists())
+        self.assertEqual(
+            json.loads(out.read_text(encoding="utf-8"))["count"], 4
         )
 
     def test_main_wrong_arg_count_returns_2(self):

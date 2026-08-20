@@ -110,9 +110,9 @@ updated: 2026-08-20
 
 **约定**
 - 能力矩阵为唯一权威数据（与复习掌握度共用，见 `review/schedule.md`）。
-- 增量更新规则：验收完成度 ≥ 4 → 该知识点 +0.5，上限 5；复习考察得分也写回。
+- 初始矩阵由**摸底测试**建立（范围驱动的 15–20 题，按知识点判分合成，对话协议见 `resources/placement-contract.md`）；增量更新规则：验收完成度 ≥ 4 → 该知识点 +0.5，上限 5；复习考察得分也写回。
 - onboarding 字段固定 8 项；后续难度反馈只影响计划档位，不写入画像数值。
-- 画像的读写与增量更新由脚本 `scripts/profile.py` 实现（`onboarding` / `acceptance` / `review`，契约见 `resources/profile-contract.md`）；onboarding 问卷写初值，验收/复习增量修正能力矩阵，难度反馈入增量记录。起步时对话式 onboarding 问卷流程见 `resources/onboarding-contract.md`。
+- 画像的读写与增量更新由脚本 `scripts/profile.py` 实现（`onboarding` / `placement` / `acceptance` / `review`，契约见 `resources/profile-contract.md`）；onboarding 问卷写初值，摸底测试初始化能力矩阵（行来源「摸底测试」），验收/复习增量修正能力矩阵，难度反馈入增量记录。起步时对话式 onboarding 问卷流程见 `resources/onboarding-contract.md`。
 
 ---
 

@@ -4,9 +4,11 @@
 
 **Blocked by:** 05 — 画像更新脚本；08 — 目标澄清与范围声明
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] 摸底测试题目生成（范围驱动、难度梯度）
-- [ ] 混合式作答流程
-- [ ] 评分标准与判分
-- [ ] 能力矩阵写入画像
+- [x] 摸底测试题目生成（范围驱动、难度梯度）——契约见 `resources/placement-contract.md` §3（题量/题型/难度硬约束、每题元数据、生成规则）
+- [x] 混合式作答流程——§4（逐题作答、允许"不会/跳过"、不代答不提示、可回看修改）
+- [x] 评分标准与判分——§5（选择题 0/1、简答/实操按评分要点 0/0.5/1、判分透明可质疑）
+- [x] 能力矩阵写入画像——§6（难度加权合成公式 + `scripts/profile.py` `op=placement` 初始化矩阵，`test_profile.py` PlacementTest 自动化测试）
+
+**验证：** 对话式流程不设自动化 seam（spec「测试 seam」），以实际演练验证——模拟出题（范围驱动、难度梯度 1–5 全覆盖）→ 混合式作答（含 1 次"不会"跳过、简答、实操）→ 对照评分标准判分 → 难度加权合成 → `profile.py op=placement` 写矩阵（退出码 0）→ 检查 `profile.md` 原文（初始矩阵行来源「摸底测试」+ 增量记录）。演练记录见 `resources/placement-contract.md` §8；演练产物存于 `.scratch/python-coach/rehearsal-09/`。矩阵写入路径另有 `scripts/test_profile.py` 的 PlacementTest 自动化测试（创建初始化 / 覆盖既有行 / 0.5 舍入与 [1,5] 截断 / 重复知识点与非法输入报错 / CLI）。
