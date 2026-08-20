@@ -1,0 +1,18 @@
+{
+  "op": "due",
+  "today": "2026-08-25",
+  "due": [
+    {
+      "topic": "变量与数据类型",
+      "mastery": 2.5,
+      "next_date": "2026-08-25",
+      "interval": 3
+    },
+    {
+      "topic": "数据读取与筛选",
+      "mastery": 3.0,
+      "next_date": "2026-08-25",
+      "interval": 1
+    }
+  ]
+}

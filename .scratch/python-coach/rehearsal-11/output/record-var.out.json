@@ -1,0 +1,12 @@
+{
+  "op": "record",
+  "today": "2026-08-25",
+  "topic": "变量与数据类型",
+  "result": "pass",
+  "row": {
+    "topic": "变量与数据类型",
+    "mastery": 3.0,
+    "next_date": "2026-09-01",
+    "interval": 7
+  }
+}

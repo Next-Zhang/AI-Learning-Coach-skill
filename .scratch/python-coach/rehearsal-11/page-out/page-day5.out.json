@@ -1,0 +1,33 @@
+{
+  "html_path": "D:\\项目\\数据库\\ai_native_learning_tool\\python-coach\\.scratch\\python-coach\\rehearsal-11\\page-out\\day-5-2026-08-25.html",
+  "output_dir": "D:\\项目\\数据库\\ai_native_learning_tool\\python-coach\\.scratch\\python-coach\\rehearsal-11\\page-out",
+  "day": "Day 5",
+  "day_number": 5,
+  "total_days": 9,
+  "date": "2026-08-25",
+  "topic": "Excel 读写（清洗将在 Day 6 引入，Day 5 仅做读取与列筛选）",
+  "goal": "用 Python 处理 Excel 报表并做数据分析",
+  "scope_covered": [
+    "语法基础",
+    "数据分析（pandas）",
+    "Excel 处理",
+    "数据可视化"
+  ],
+  "scope_excluded": [
+    "Web 框架",
+    "网络爬虫"
+  ],
+  "objectives": [
+    "用 pandas 读写 Excel（read_excel / to_excel）",
+    "指定 sheet 参数读取工作表",
+    "完成「读入 → 简单处理（仅筛选）→ 写出」小程序"
+  ],
+  "knowledge_points": [
+    "Excel 读写"
+  ],
+  "sources": [
+    "https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html",
+    "https://www.bilibili.com/video/av540310024/"
+  ],
+  "knowledge_count": 1
+}

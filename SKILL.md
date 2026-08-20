@@ -12,11 +12,13 @@ disable-model-invocation: true
 
 ## 会话开始（每个学习日）
 
+按流程契约 [`resources/session-start-contract.md`](resources/session-start-contract.md) 执行（ticket 11）——本小节是概要，对话协议以契约为准。
+
 1. 读取工作目录数据文件：`plan.md`、`progress.md`、`profile.md`、`review/schedule.md`。
    - 首次使用（无 `plan.md`）→ 走「起步流程」。
-   - 已有计划 → 走「复习检查」→「当日执行」。
-2. 复习检查：读 `review/schedule.md`，找出到期知识点（下次复习日 ≤ 今天），一问一答考察；考察得分写回掌握度（`profile.md` 能力矩阵 + 调度表推进，未通过重置回 1 天）。
-3. 新课开头随机抽查 2 个历史知识点热场（有历史时）。
+   - 已有计划 → 走「复习检查」→「随机抽查热场」→「当日网页」→「当日执行」。
+2. 复习检查：调 `scripts/schedule.py`（`op=due`）找到期知识点（下次复习日 ≤ 今天），逐一**一问一答**考察，判 `pass/fail`（出题依据复习快查文档/来源）；全部考完后展示**考察结果单**，经学习者确认后成对写回——`scripts/schedule.py`（`op=record`）推进调度表 + `scripts/profile.py`（`op=review`）写回能力矩阵（通过 +0.5/推进下一档 1→3→7→15→30、未通过 -0.5/重置回 1 天）。写回属持久层修改，写前先经学习者确认（护栏 approval）。
+3. 新课开头随机抽查 2 个历史知识点热场（历史中有**非到期**知识点时）：快问快答回顾，**不计分、不回写、不推进调度表**；候选不足则抽可用数量或跳过。
 4. 生成当日执行网页（单文件 HTML，见「当日网页」），进入当日任务执行。
 
 ## 当日网页

@@ -4,9 +4,11 @@
 
 **Blocked by:** 03 — 间隔重复调度脚本；06 — 网页生成脚本；10 — 计划生成与三验证
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] 会话开头复习检查（到期知识点）
-- [ ] 一问一答考察 + 随机抽查热场
-- [ ] 当日网页生成
-- [ ] 执行辅助（范围约束、来源引用）
+- [x] 会话开头复习检查（到期知识点）——契约见 `resources/session-start-contract.md` §3（`schedule.py op=due` 找到期、展示概览、逐一考察、考察结果单确认后成对写回）
+- [x] 一问一答考察 + 随机抽查热场——§4（出题有依据、pass/fail 判分透明；`schedule.py record` + `profile.py review` 同一知识点同一结果成对写回、批量确认）＋§5（新课开头随机抽 2 个非到期历史知识点热场，不计分不回写）
+- [x] 当日网页生成——§6（检索层提炼 knowledge → `page.py` 生成单文件 HTML，四区块）
+- [x] 执行辅助（范围约束、来源引用）——§7（只做当日任务 + `scope_covered`、关键事实引用来源、辅助实操循环、30 步上限收敛）
+
+**验证：** 对话式流程不设自动化 seam（spec「测试 seam」），以**实际演练**验证——本次构建演练 Day 5 早晨场景（`rehearsal-11/`）：前置数据模拟 Day 1–4 已完成后的调度表/矩阵状态 → `due`（到期 2 个知识点）→ 一问一答考察（转写摘录，1 通过 + 1 未通过）→ 考察结果单确认 → `record`×2 + `review`×2 真实脚本写回（调度表 3→7 天推进 / 未通过重置 1 天，矩阵同步）→ 随机抽查热场 2 个非到期知识点（不计分）→ `retrieve` + `page.py` 生成 Day 5 网页（四区块齐全）→ 执行辅助（openpyxl 缺包坑 + read_excel 示范，引用官方文档）。详细转写与产物见 `.scratch/python-coach/rehearsal-11/`；契约 `resources/session-start-contract.md` §9。

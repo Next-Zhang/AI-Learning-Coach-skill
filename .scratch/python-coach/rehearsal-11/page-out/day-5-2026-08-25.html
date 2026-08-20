@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Day 5 — Excel 读写（清洗将在 Day 6 引入，Day 5 仅做读取与列筛选）（2026-08-25） · 当日执行视图</title>
+<style>
+:root {
+  --bg: #fafafa; --card: #ffffff; --ink: #222; --muted: #666;
+  --line: #e3e3e3; --accent: #2f6f4f; --accent-bg: #eef6f1;
+  --code-bg: #f4f4f4;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 32px 16px; background: var(--bg); color: var(--ink);
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC",
+               "Noto Sans CJK SC", sans-serif;
+  line-height: 1.7;
+}
+main { max-width: 760px; margin: 0 auto; }
+header.page-head { margin-bottom: 28px; }
+header.page-head h1 { margin: 0 0 6px; font-size: 26px; }
+.meta { color: var(--muted); font-size: 14px; }
+section.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 20px 22px; margin-bottom: 18px;
+}
+section.card h2 {
+  margin: 0 0 12px; font-size: 18px; padding-bottom: 8px;
+  border-bottom: 2px solid var(--accent);
+}
+.knowledge-item { margin-bottom: 16px; }
+.knowledge-item:last-child { margin-bottom: 0; }
+.knowledge-item h3 { margin: 0 0 6px; font-size: 16px; }
+pre {
+  background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px;
+  padding: 12px 14px; overflow-x: auto; font-size: 13px;
+}
+code {
+  font-family: Consolas, "Courier New", monospace;
+  background: var(--code-bg); padding: 1px 5px; border-radius: 4px; font-size: 13px;
+}
+pre code { background: none; padding: 0; }
+ol.journey { list-style: none; padding: 0; margin: 0; counter-reset: step; }
+ol.journey li {
+  counter-increment: step; position: relative; padding: 8px 10px 8px 44px;
+  margin-bottom: 8px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--card);
+}
+ol.journey li::before {
+  content: counter(step); position: absolute; left: 12px; top: 50%;
+  transform: translateY(-50%); width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent-bg); color: var(--accent); text-align: center;
+  line-height: 22px; font-size: 12px; font-weight: 700;
+}
+ol.journey li.current {
+  border-color: var(--accent); background: var(--accent-bg); font-weight: 600;
+}
+ol.journey li.current::before { background: var(--accent); color: #fff; }
+ul.objectives { list-style: none; padding: 0; margin: 0 0 16px; }
+ul.objectives li { padding: 6px 0; }
+ul.objectives input[type="checkbox"] { margin-right: 8px; }
+.scope {
+  border-top: 1px dashed var(--line); padding-top: 12px; font-size: 14px;
+  color: var(--muted);
+}
+.scope strong { color: var(--ink); }
+ul.sources { margin: 0; padding-left: 20px; }
+ul.sources a { color: var(--accent); word-break: break-all; }
+footer { color: var(--muted); font-size: 12px; text-align: center; margin-top: 24px; }
+</style>
+</head>
+<body>
+<main>
+<header class="page-head">
+<h1>Day 5 — Excel 读写（清洗将在 Day 6 引入，Day 5 仅做读取与列筛选）（2026-08-25）</h1>
+<p class="meta">2026-08-25 · 当日执行视图（临时文件，验收后删除）</p>
+</header>
+<section class="card" id="knowledge">
+<h2>今日知识</h2>
+<div class="knowledge-item"><h3>Excel 读写</h3><div class="concept"><p>用 pandas 读写 Excel 文件：<code>read_excel</code> 读取、<code>to_excel</code> 写出，可用 <code>sheet_name</code> 参数指定工作表。</p></div><pre><code>df = pd.read_excel(&#x27;报表.xlsx&#x27;, sheet_name=&#x27;Sheet1&#x27;)
+df.to_excel(&#x27;输出.xlsx&#x27;, index=False)</code></pre></div>
+</section>
+<section class="card" id="journey">
+<h2>完整链路</h2>
+<p><strong>学习目标：</strong>用 Python 处理 Excel 报表并做数据分析</p><p style="color:var(--muted);font-size:14px">今日位置：第 5 / 9 天</p><ol class="journey"><li>Day 1 · 2026-08-21<br><span style="font-weight:400;font-size:13px">Python 基础：变量、类型与条件</span></li>
+<li>Day 2 · 2026-08-22<br><span style="font-weight:400;font-size:13px">函数（含默认参数）</span></li>
+<li>Day 3 · 2026-08-23<br><span style="font-weight:400;font-size:13px">pandas 入门：Series 与 DataFrame</span></li>
+<li>Day 4 · 2026-08-24<br><span style="font-weight:400;font-size:13px">数据读取与筛选</span></li>
+<li class="current">Day 5 · 2026-08-25<br><span style="font-weight:400;font-size:13px">Excel 读写（清洗将在 Day 6 引入，Day 5 仅做读取与列筛选）</span></li>
+<li>Day 6 · 2026-08-26<br><span style="font-weight:400;font-size:13px">数据清洗</span></li>
+<li>Day 7 · 2026-08-27<br><span style="font-weight:400;font-size:13px">matplotlib 基础绘图</span></li>
+<li>Day 8 · 2026-08-28<br><span style="font-weight:400;font-size:13px">图表定制与美化</span></li>
+<li>Day 9 · 2026-08-29<br><span style="font-weight:400;font-size:13px">综合实战：从 Excel 报表到分析图表</span></li></ol>
+</section>
+<section class="card" id="objectives">
+<h2>今日目标</h2>
+<ul class="objectives"><li><label><input type="checkbox">用 pandas 读写 Excel（read_excel / to_excel）</label></li><li><label><input type="checkbox">指定 sheet 参数读取工作表</label></li><li><label><input type="checkbox">完成「读入 → 简单处理（仅筛选）→ 写出」小程序</label></li></ul><div class="scope"><p><strong>范围声明 · 覆盖：</strong>语法基础、数据分析（pandas）、Excel 处理、数据可视化</p><p><strong>范围声明 · 不涉及：</strong>Web 框架、网络爬虫</p></div>
+</section>
+<section class="card" id="sources">
+<h2>参考来源</h2>
+<ul class="sources"><li><a href="https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html">https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html</a></li><li><a href="https://www.bilibili.com/video/av540310024/">https://www.bilibili.com/video/av540310024/</a></li></ul>
+</section>
+</main>
+<footer>python-coach 当日执行视图 · 生成后仅供本日学习使用，验收完成经确认后删除</footer>
+</body>
+</html>

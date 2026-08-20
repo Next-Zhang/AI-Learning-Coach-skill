@@ -1,0 +1,38 @@
+{
+  "query": "Excel 读写 read_excel to_excel sheet",
+  "results": [
+    {
+      "title": "pandas.read_excel 官方文档",
+      "source": "https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html",
+      "summary": "pandas read_excel 官方参考：读取 Excel 文件，支持 sheet_name 参数。",
+      "link": "https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html",
+      "topics": [],
+      "date": "",
+      "score": null,
+      "matched_terms": [],
+      "origin": "web"
+    },
+    {
+      "title": "pandas pandas.DataFrame.to_excel 官方文档",
+      "source": "https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_excel.html",
+      "summary": "pandas to_excel 官方参考：DataFrame 写出为 Excel 文件。",
+      "link": "https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_excel.html",
+      "topics": [],
+      "date": "",
+      "score": null,
+      "matched_terms": [],
+      "origin": "web"
+    },
+    {
+      "title": "pandas 读写 Excel 视频讲解",
+      "source": "https://www.bilibili.com/video/av540310024/",
+      "summary": "Excel 读写与清洗的讲解视频（Day 5/Day 6 来源）。",
+      "link": "https://www.bilibili.com/video/av540310024/",
+      "topics": [],
+      "date": "",
+      "score": null,
+      "matched_terms": [],
+      "origin": "web"
+    }
+  ]
+}

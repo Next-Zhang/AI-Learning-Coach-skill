@@ -14,6 +14,7 @@
 - `resources/goal-scope-contract.md`：目标澄清与范围声明流程契约（ticket 08）——起步流程第 2 步的对话协议（一句话目标澄清、子领域圈定、覆盖/不涉及范围声明、写 plan.md 草案）。
 - `resources/placement-contract.md`：摸底测试流程契约（ticket 09）——起步流程第 3 步的对话协议（范围驱动的 15–20 题：选择 10–12 + 简答/实操 5–8、难度梯度 1–5；混合式作答；评分标准与判分；难度加权合成能力矩阵并写入画像）。
 - `resources/plan-contract.md`：计划生成与三验证流程契约（ticket 10）——起步流程第 4 步的对话协议（按天划分、含来源引用的草案生成；独立评审 agent 三验证：真实性/合理性/适配性；评审→修订→再评审循环轮次上限 3；通过后落盘 `plan.md` 为 `active`）。
+- `resources/session-start-contract.md`：每日会话开始流程契约（ticket 11）——会话开头的对话编排（复习检查：到期知识点一问一答考察、考察结果单确认后成对写回调度表与能力矩阵；新课开头随机抽查 2 个历史知识点热场不计分；当日网页生成；执行辅助的范围约束与来源引用）。
 - `scripts/`：纯逻辑脚本（测试 seam）——`retrieve.py` 检索层（`test_retrieve.py` 为其测试）、`schedule.py` 复习调度（`test_schedule.py` 为其测试）、`completion.py` 完成度合成（`test_completion.py` 为其测试）、`profile.py` 画像更新（onboarding 问卷初值、摸底初始矩阵、验收/复习增量修正；`test_profile.py` 为其测试）、`page.py` 当日执行网页生成（`test_page.py` 为其测试）。
 - `templates/`：六件套数据文件初始模板（初始化项目数据时按模板生成）。
 - `docs/adr/`：设计决策记录（ADR-0001 每日会话归档；ADR-0002 检索层抽象）。
