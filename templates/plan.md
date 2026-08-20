@@ -2,7 +2,7 @@
 goal: （一句话学习目标：想用 Python 做什么）
 scope_covered: []
 scope_excluded: []
-status: active
+status: draft
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 ---
@@ -11,10 +11,4 @@ updated: YYYY-MM-DD
 
 ## 每日任务
 
-### Day 1 — YYYY-MM-DD
-- 主题：（今日主题）
-- 目标清单：
-  - [ ] （今日目标 1）
-  - [ ] （今日目标 2）
-- 知识点：（逗号分隔）
-- 来源：（sources/ 文件名或 URL，必填）
+（草案：目标与范围声明已确认；每日任务清单由计划生成阶段填充，落盘时 status 置为 active。）

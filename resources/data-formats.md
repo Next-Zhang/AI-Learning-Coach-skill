@@ -20,7 +20,7 @@
 goal: 用一句话说清"想用 Python 做什么"的具体目标
 scope_covered: [数据分析, pandas, 数据可视化]   # 范围声明：覆盖的子领域
 scope_excluded: [Web 框架, 网络爬虫]            # 范围声明：不涉及的子领域
-status: active                                   # active | completed | archived
+status: active                                   # draft | active | completed | archived
 created: 2026-08-19
 updated: 2026-08-19
 ---
@@ -40,6 +40,7 @@ updated: 2026-08-19
 
 **约定**
 - frontmatter `goal` / `scope_covered` / `scope_excluded` 为计划适配性与失控防护锚点，改动需学习者确认。
+- 生命周期：起步流程目标澄清阶段写入**草案**（`status: draft`，frontmatter 的 `goal`/`scope_covered`/`scope_excluded`/`status` 四字段 + 空每日任务，对话协议见 `resources/goal-scope-contract.md`）；计划生成三验证通过后落盘（`status: active`，每日任务齐备）。
 - 每个 Day 区块：主题、目标清单（可勾选）、知识点、来源（引用 `sources/` 文件名或 URL）。
 - 来源为必需字段；无来源的 Day 视为未验证，不得落盘（护栏「引用规范」）。
 

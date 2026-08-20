@@ -11,6 +11,7 @@
 - `resources/profile-contract.md`：画像更新契约（ticket 05）——onboarding 问卷 / 验收完成度 / 复习考察得分 → 能力矩阵增量修正的输入输出格式、更新规则与用法；难度反馈入增量记录。
 - `resources/page-contract.md`：当日执行网页生成契约（ticket 06）——plan.md + 当日任务 → 单文件静态 HTML（自包含、可离线打开，含知识/链路/目标/来源四区块）的输入输出格式、知识内容来源与用法。
 - `resources/onboarding-contract.md`：onboarding 问卷流程契约（ticket 07）——对话式 8 题问卷的对话协议（一问一答、校验、中途修改、汇总确认）与写画像初值流程。
+- `resources/goal-scope-contract.md`：目标澄清与范围声明流程契约（ticket 08）——起步流程第 2 步的对话协议（一句话目标澄清、子领域圈定、覆盖/不涉及范围声明、写 plan.md 草案）。
 - `scripts/`：纯逻辑脚本（测试 seam）——`retrieve.py` 检索层（`test_retrieve.py` 为其测试）、`schedule.py` 复习调度（`test_schedule.py` 为其测试）、`completion.py` 完成度合成（`test_completion.py` 为其测试）、`profile.py` 画像更新（`test_profile.py` 为其测试）、`page.py` 当日执行网页生成（`test_page.py` 为其测试）。
 - `templates/`：六件套数据文件初始模板（初始化项目数据时按模板生成）。
 - `docs/adr/`：设计决策记录（ADR-0001 每日会话归档；ADR-0002 检索层抽象）。

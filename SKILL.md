@@ -30,7 +30,7 @@ disable-model-invocation: true
 ## 起步流程（仅首次）
 
 1. **Onboarding 问卷**：按问卷流程契约 [`resources/onboarding-contract.md`](resources/onboarding-contract.md) 一问一答收集 8 题（学习目标、Python 水平自评 1–5、每日时间预算、学习风格偏好、压力承受自评 1–5、期望节奏、过往经历、复习意愿）；学习者可随时要求**中途修改**已答题目，汇总确认后经 [`scripts/profile.py`](scripts/profile.py)（`op=onboarding`，契约见 [`resources/profile-contract.md`](resources/profile-contract.md)）写入 `profile.md` 画像初值。属持久层修改，执行前先经学习者确认（护栏 approval）。
-2. **目标澄清**：学习者用一句话说出"想用 Python 做什么"的具体目标 → 圈定所需子领域 → 生成显式**范围声明**（覆盖什么、不涉及什么）→ 写入 `plan.md` 草案。
+2. **目标澄清**：学习者用一句话说出"想用 Python 做什么"的具体目标 → 圈定所需子领域 → 生成显式**范围声明**（覆盖什么、不涉及什么）→ 写入 `plan.md` 草案。按流程契约 [`resources/goal-scope-contract.md`](resources/goal-scope-contract.md) 执行（起点为 `profile.md` 画像「学习目标」，覆盖/不涉及清单须学习者确认）；写入 `plan.md` 属持久层修改，执行前先经学习者确认（护栏 approval），草案 `status: draft`，每日任务由计划生成阶段填充。
 3. **摸底测试**：范围驱动 15–20 题（选择题 10–12 + 简答/实操 5–8，难度梯度 1–5），产出能力矩阵（知识点 × 水平分 1–5）写入 `profile.md`。
 4. **计划生成与三验证**：基于目标 + 范围声明 + 能力矩阵生成按天划分的计划草案（每条计划项带来源引用）→ 落盘前起独立评审 agent 做三验证（真实性：逐项对照检索来源；合理性：主题顺序/深度/份量；适配性：对照画像）→ 评审问题清单 → 修订 → 通过后落盘 `plan.md`。
 5. 完成后进入「会话开始」第 2 步。
