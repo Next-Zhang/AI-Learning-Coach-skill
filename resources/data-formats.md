@@ -74,6 +74,7 @@ updated: 2026-08-20
 - 完成度合成由脚本 `scripts/completion.py` 计算（0.7 × agent + 0.3 × 自评，四舍五入到 0.5 档），契约见 `resources/completion-contract.md`。
 - 难度反馈独立记录：`太难 | 刚好 | 太简单`，不参与完成度。
 - 证据只存摘要与位置，不存大段代码（正文可引述关键几行）。
+- 当日总结的起草、展示、追加与确认协议见 `resources/acceptance-contract.md`（ticket 12）。
 
 ---
 

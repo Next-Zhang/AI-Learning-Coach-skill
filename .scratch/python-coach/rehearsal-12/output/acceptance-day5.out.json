@@ -1,0 +1,13 @@
+{
+  "op": "acceptance",
+  "date": "2026-08-25",
+  "topic": "Excel 读写",
+  "source": "验收 Day 5",
+  "old_score": 3.0,
+  "new_score": 3.5,
+  "delta": 0.5,
+  "updated": true,
+  "log_entry": "- 2026-08-25：验收 Day 5（完成度 4.5，难度 太难）→ Excel 读写 +0.5（3→3.5）",
+  "score": 4.5,
+  "difficulty": "太难"
+}

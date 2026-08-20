@@ -15,7 +15,8 @@
 - `resources/placement-contract.md`：摸底测试流程契约（ticket 09）——起步流程第 3 步的对话协议（范围驱动的 15–20 题：选择 10–12 + 简答/实操 5–8、难度梯度 1–5；混合式作答；评分标准与判分；难度加权合成能力矩阵并写入画像）。
 - `resources/plan-contract.md`：计划生成与三验证流程契约（ticket 10）——起步流程第 4 步的对话协议（按天划分、含来源引用的草案生成；独立评审 agent 三验证：真实性/合理性/适配性；评审→修订→再评审循环轮次上限 3；通过后落盘 `plan.md` 为 `active`）。
 - `resources/session-start-contract.md`：每日会话开始流程契约（ticket 11）——会话开头的对话编排（复习检查：到期知识点一问一答考察、考察结果单确认后成对写回调度表与能力矩阵；新课开头随机抽查 2 个历史知识点热场不计分；当日网页生成；执行辅助的范围约束与来源引用）。
-- `scripts/`：纯逻辑脚本（测试 seam）——`retrieve.py` 检索层（`test_retrieve.py` 为其测试）、`schedule.py` 复习调度（`test_schedule.py` 为其测试）、`completion.py` 完成度合成（`test_completion.py` 为其测试）、`profile.py` 画像更新（onboarding 问卷初值、摸底初始矩阵、验收/复习增量修正；`test_profile.py` 为其测试）、`page.py` 当日执行网页生成（`test_page.py` 为其测试）。
+- `resources/acceptance-contract.md`：验收、当日总结与网页清除流程契约（ticket 12）——当日收尾的对话编排（证据提交 → 逐目标核查 → 结论三档（完成/部分完成/未完成 + 理由）→ 完成度合成与难度采集（`completion.py`，难度独立不参与分数）→ 学习者确认 → 验收结果写回画像（`profile.py op=acceptance`）→ 当日总结写入 `progress.md` → 提出删除当日网页、确认后清除）。
+- `scripts/`：纯逻辑脚本（测试 seam）——`retrieve.py` 检索层（`test_retrieve.py` 为其测试）、`schedule.py` 复习调度（`test_schedule.py` 为其测试）、`completion.py` 完成度合成（`test_completion.py` 为其测试）、`profile.py` 画像更新（onboarding 问卷初值、摸底初始矩阵、验收/复习增量修正；`test_profile.py` 为其测试）、`page.py` 当日执行网页生成（`test_page.py` 为其测试）。对话式流程（起步各步、验收）不设自动化 seam，构建后以演练目录 `rehearsal-10/11/12` 实际验证。
 - `templates/`：六件套数据文件初始模板（初始化项目数据时按模板生成）。
 - `docs/adr/`：设计决策记录（ADR-0001 每日会话归档；ADR-0002 检索层抽象）。
 - `CONTEXT.md`：领域词汇表（20 术语）。
