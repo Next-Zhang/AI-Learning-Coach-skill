@@ -23,6 +23,8 @@ import html
 import json
 import re
 import sys
+
+sys.dont_write_bytecode = True  # 运行期不写 __pycache__（等价 PYTHONDONTWRITEBYTECODE=1）
 import tempfile
 from pathlib import Path
 

@@ -8,12 +8,22 @@
 
 四种操作（输入文件 op 字段）：
 - onboarding：onboarding 问卷结果（8 题）写入画像初值；画像文件不存在时创建；
-- placement：摸底测试结果（知识点 × 水平分）初始化能力矩阵（来源「摸底测试」）；
-  画像文件不存在时创建；results 内知识点行整体覆盖，其余行保留；
-- acceptance：记录一次验收结果（完成度 + 难度反馈）→ 能力矩阵增量修正
-  （完成度 ≥ 4 → 该知识点 +0.5，上限 5；难度反馈独立记录，不改变矩阵数值）；
-- review：记录一次复习考察结果 → 能力矩阵写回（通过 +0.5 上限 5；
+- placement：摸底测试结果初始化能力矩阵（来源「摸底测试」）——知识点行写
+  水平分（[{topic, score}] 或 [{topic, type: "知识点", score, domain?, subdomain?}]），
+  能力行写前置状态（[{topic, type: "能力", pre_status: "具备"|"未具备", domain?, subdomain?}]）；
+  画像文件不存在时创建；results 内行整体覆盖，其余行保留；
+- acceptance：记录一次验收结果（完成度 + 难度反馈）→ 能力矩阵知识点行增量修正
+  （完成度 ≥ 4 → 该知识点 +0.5，上限 5；难度反馈独立记录，不改变矩阵数值；
+  能力行无水平分，不接受验收/复习增量）；
+- review：记录一次复习考察结果 → 能力矩阵知识点行写回（通过 +0.5 上限 5；
   未通过 -0.5 下限 1），与 scripts/schedule.py 的掌握度推进同一规则。
+
+显式新增通道（批次 4，决策 5）：acceptance/review 的 topic 不在能力矩阵时，
+默认仍报错（矩阵由摸底测试初始化）；经学习者确认后由输入 `add_new: true`
+放行新建矩阵行（知识点评分初值见下方规则；来源默认「验收新增」/「复习新增」，
+agent 通常显式传「验收新增 Day N」）。该通道与调度表 `schedule.py op=add`、
+快查文档 `review.py op=append` 构成三同步（见 ../resources/acceptance-contract.md
+§6 与 ../resources/review-contract.md）。
 
 本脚本原地读写 profile.md（能力矩阵 + 增量记录 + frontmatter updated）；
 难度反馈只在增量记录中留痕，不写入矩阵数值（spec「完成度评分」：
@@ -22,6 +32,8 @@
 import json
 import math
 import sys
+
+sys.dont_write_bytecode = True  # 运行期不写 __pycache__（等价 PYTHONDONTWRITEBYTECODE=1）
 from datetime import date, datetime
 from pathlib import Path
 
@@ -37,10 +49,23 @@ DIFFICULTY_LEVELS = ("太难", "刚好", "太简单")
 
 TITLE = "# 用户画像"
 ONBOARDING_HEADER = "## Onboarding 问卷（8 题）"
-MATRIX_HEADER = "## 能力矩阵（知识点 × 水平分 1–5）"
+MATRIX_HEADER = "## 能力矩阵（领域 → 子领域 → 知识点/能力）"
 LOG_HEADER = "## 增量记录"
-MATRIX_HEADER_ROW = "| 知识点 | 水平分 | 更新时间 | 来源 |"
-MATRIX_SEPARATOR = "| --- | --- | --- | --- |"
+MATRIX_HEADER_ROW = "| 领域 | 子领域 | 知识点 | 类型 | 水平分 | 前置状态 | 更新时间 | 来源 |"
+MATRIX_SEPARATOR = "| --- | --- | --- | --- | --- | --- | --- | --- |"
+# 矩阵行类型：知识点（水平分 1–5，前置状态 = —）| 能力（水平分 = —，前置状态 = 具备|未具备）
+TYPE_KNOWLEDGE = "知识点"
+TYPE_ABILITY = "能力"
+PRE_STATUS_READY = "具备"
+PRE_STATUS_GAP = "未具备"
+DASH = "—"
+# 显式新增通道（批次 4）：新增行默认来源（agent 通常显式传「验收新增 Day N」）
+NEW_ACCEPTANCE_SOURCE = "验收新增"
+NEW_REVIEW_SOURCE = "复习新增"
+# review 新增知识点的初值：通过 → 2.0（与 scripts/schedule.py 的 add 默认掌握度一致），
+# 未通过 → 1.0（下限，仍需补学）
+NEW_PASS_LEVEL = 2.0
+NEW_FAIL_LEVEL = 1.0
 
 # onboarding 固定 8 题（label, 是否 1–5 数值自评）；字段名保持稳定
 ONBOARDING_FIELDS = (
@@ -125,33 +150,62 @@ def _source_text(value, default):
 
 
 def _parse_matrix_row(line):
-    """解析一行矩阵行 `| topic | level | date | source |` → dict；失败返回 None。
+    """解析一行矩阵行 → dict；失败返回 None。
 
-    容错：单元格个数不对、水平分/日期无法解析的行一律跳过（与调度表解析同一策略）；
+    新 schema（8 列）：`| 领域 | 子领域 | 知识点 | 类型 | 水平分 | 前置状态 | 更新时间 | 来源 |`；
+    旧 schema（4 列，容错）：`| 知识点 | 水平分 | 更新时间 | 来源 |`（视为知识点行，领域/子领域为空、
+    前置状态 = —）。类型 = 知识点（水平分数字，前置状态 = —）| 能力（水平分 = —，前置状态 = 具备|未具备）。
+
+    容错：单元格个数不对、类型非法、水平分/日期无法解析的行一律跳过（与调度表解析同一策略）；
     表头行与分隔行的水平分不是数字，自然被跳过。
     """
     cells = [c.strip() for c in line.strip().strip("|").split("|")]
-    if len(cells) != 4:
+    if len(cells) == 8:
+        domain, subdomain, topic, row_type, level_text, pre_status, updated, source = cells
+    elif len(cells) == 4:
+        # 旧 4 列 schema 容错：知识点行（领域/子领域缺省为空、类型=知识点、前置状态 = —）
+        topic, level_text, updated, source = cells
+        domain = subdomain = ""
+        row_type = TYPE_KNOWLEDGE
+        pre_status = DASH
+    else:
         return None
-    topic, level, updated, source = cells
     if not topic:
         return None
-    level = _parse_level(level)
-    if level is None:
+    if row_type == TYPE_KNOWLEDGE:
+        level = _parse_level(level_text)
+        if level is None:
+            return None
+        pre_status = DASH
+    elif row_type == TYPE_ABILITY:
+        if pre_status not in (PRE_STATUS_READY, PRE_STATUS_GAP):
+            return None
+        level = None  # 能力行无水平分（前置状态为二值）
+    else:
         return None
     try:
         # 统一规范为 YYYY-MM-DD，保证字符串比较与写入格式一致
         updated = datetime.strptime(updated, "%Y-%m-%d").date().isoformat()
     except ValueError:
         return None
-    return {"topic": topic, "level": level, "date": updated, "source": source}
+    return {
+        "domain": domain,
+        "subdomain": subdomain,
+        "topic": topic,
+        "type": row_type,
+        "level": level,
+        "pre_status": pre_status,
+        "date": updated,
+        "source": source,
+    }
 
 
 def parse_profile(text):
     """解析画像文本 → {created, updated, onboarding, matrix, log}。
 
     - onboarding：Onboarding 问卷区块下的逐行原文（非空行）；
-    - matrix：能力矩阵表格行 [{topic, level, date, source}]，坏行跳过；
+    - matrix：能力矩阵表格行 [{domain, subdomain, topic, type, level, pre_status,
+      date, source}]，坏行跳过；
     - log：增量记录区块的逐行原文（跳过空行与模板占位注释）。
     无 frontmatter / 缺区块均可解析（写回时补齐结构）。
     """
@@ -182,7 +236,8 @@ def parse_profile(text):
         stripped = lines[i].strip()
         if stripped == ONBOARDING_HEADER:
             section = "onboarding"
-        elif stripped == MATRIX_HEADER:
+        elif stripped.startswith("## 能力矩阵"):
+            # 兼容新旧表头（新「领域 → 子领域 → 知识点/能力」/ 旧「知识点 × 水平分 1–5」）
             section = "matrix"
         elif stripped == LOG_HEADER:
             section = "log"
@@ -229,9 +284,16 @@ def render_profile(data, updated):
             lines.append(f"- {label}：")
     lines.extend(["", MATRIX_HEADER, MATRIX_HEADER_ROW, MATRIX_SEPARATOR])
     for row in data["matrix"]:
+        # 知识点行：水平分 + 前置状态 = —；能力行：水平分 = — + 前置状态（具备|未具备）
+        if row["type"] == TYPE_ABILITY:
+            level_text = DASH
+            pre_status = row["pre_status"]
+        else:
+            level_text = _number_text(row["level"])
+            pre_status = DASH
         lines.append(
-            f"| {row['topic']} | {_number_text(row['level'])} | "
-            f"{row['date']} | {row['source']} |"
+            f"| {row['domain']} | {row['subdomain']} | {row['topic']} | {row['type']} | "
+            f"{level_text} | {pre_status} | {row['date']} | {row['source']} |"
         )
     lines.extend(["", LOG_HEADER])
     if data["log"]:
@@ -268,20 +330,108 @@ def _find_topic(data, topic):
     return idx
 
 
-def _apply_delta(data, topic, delta, day, source, detail):
+def _find_topic_or_none(data, topic):
+    """查矩阵行下标；不在矩阵返回 None（供显式新增通道判定，批次 4）。"""
+    return next((i for i, r in enumerate(data["matrix"]) if r["topic"] == topic), None)
+
+
+def _new_row_fields(req, topic):
+    """显式新增通道的行字段：type（知识点|能力）、domain/subdomain、pre_status（能力行必填）。
+
+    知识点行：pre_status 忽略（初值由调用方按 op 给出）；能力行：pre_status 必填
+    （二值），水平分恒为 None。type 非法报错。
+    """
+    row_type = req.get("type", TYPE_KNOWLEDGE)
+    if row_type not in (TYPE_KNOWLEDGE, TYPE_ABILITY):
+        raise ValueError(
+            f'type 必须是 "{TYPE_KNOWLEDGE}" / "{TYPE_ABILITY}"：{row_type!r}'
+        )
+    domain = (req.get("domain") or "").strip()
+    subdomain = (req.get("subdomain") or "").strip()
+    pre_status = None
+    if row_type == TYPE_ABILITY:
+        pre_status = req.get("pre_status")
+        if pre_status not in (PRE_STATUS_READY, PRE_STATUS_GAP):
+            raise ValueError(
+                '能力行需要 pre_status 字段（"具备" / "未具备"）：' + topic
+            )
+    return row_type, domain, subdomain, pre_status
+
+
+def _apply_new_row(data, topic, day, source, detail, row_type, level, pre_status,
+                   domain, subdomain):
+    """显式新增通道：为矩阵外知识点新建矩阵行并追加增量记录（acceptance/review 共用）。
+
+    仅适用于 topic 不在矩阵（调用方已确认并经 add_new 放行）：知识点行写水平分
+    （acceptance 取完成度、review 取 pass 2.0 / fail 1.0），能力行写前置状态；
+    来源为「验收新增」/「复习新增」类文本（调用方传入）。返回输出片段：
+    added=true、old_score/delta=None（新行无旧值）、new_score（能力行为 None）。
+    """
+    if row_type == TYPE_ABILITY:
+        row = {
+            "domain": domain,
+            "subdomain": subdomain,
+            "topic": topic,
+            "type": TYPE_ABILITY,
+            "level": None,
+            "pre_status": pre_status,
+            "date": day,
+            "source": source,
+        }
+        entry = (
+            f"- {day}：{source}（{detail}）→ 新增能力 {topic}（前置状态 {pre_status}）"
+        )
+        new_score = None
+    else:
+        row = {
+            "domain": domain,
+            "subdomain": subdomain,
+            "topic": topic,
+            "type": TYPE_KNOWLEDGE,
+            "level": level,
+            "pre_status": DASH,
+            "date": day,
+            "source": source,
+        }
+        entry = (
+            f"- {day}：{source}（{detail}）→ 新增知识点 {topic}（水平 {_number_text(level)}）"
+        )
+        new_score = level
+    data["matrix"].append(row)
+    data["log"].append(entry)
+    return {
+        "topic": topic,
+        "source": source,
+        "old_score": None,
+        "new_score": new_score,
+        "delta": None,
+        "updated": True,
+        "added": True,
+        "log_entry": entry,
+    }
+
+
+def _apply_delta(data, topic, delta, day, source, detail, idx=None):
     """对能力矩阵某知识点应用增量并追加增量记录（acceptance/review 共用）。
 
     delta：期望增量（0 表示不变化，如验收未达阈值）；detail：括号内详情文本；
     source：矩阵「来源」列与日志事件名。数值实际截断在 [1, 5]，因此已达
-    上限/下限时 updated=False、日志记「矩阵不变」。
+    上限/下限时 updated=False、日志记「矩阵不变」。仅适用于知识点行
+    （能力行无水平分，前置状态为二值，不接受验收/复习增量）。
     """
-    idx = _find_topic(data, topic)
-    old = data["matrix"][idx]["level"]
+    if idx is None:
+        idx = _find_topic(data, topic)
+    row = data["matrix"][idx]
+    if row["type"] != TYPE_KNOWLEDGE:
+        raise ValueError(
+            f"能力行不接受验收/复习增量（前置状态为二值）：{topic}"
+        )
+    old = row["level"]
     new = min(LEVEL_MAX, max(LEVEL_MIN, old + delta))
     updated = new != old
     if updated:
         data["matrix"][idx] = {
-            "topic": topic,
+            **row,
             "level": new,
             "date": day,
             "source": source,
@@ -343,15 +493,19 @@ def _run_onboarding(req, data, day):
 
 
 def _run_placement(req, data, day):
-    """placement：摸底测试结果（知识点 × 水平分）初始化能力矩阵。
+    """placement：摸底测试结果初始化能力矩阵。
 
-    results = [{topic, score}]；topic 须非空且不重复，score 为数字（[1, 5] 截断
-    + 0.5 档舍入兜底）。results 内知识点行整体按新值覆盖（来源「摸底测试」、
+    results = [{topic, score}]（知识点行，向后兼容）或带类型/分层字段：
+    - 知识点行：{topic, score, type?: "知识点", domain?, subdomain?}；
+      level 按 score 0.5 档舍入并截断 [1, 5]，前置状态 = —；
+    - 能力行（前置能力评估）：{topic, type: "能力", pre_status: "具备"|"未具备",
+      domain?, subdomain?}；水平分 = —，前置状态二值。
+    topic 须非空且不重复。results 内行整体按新值覆盖（来源「摸底测试」、
     日期 = day），其余行保留；日志追加一条「摸底测试 → 初始矩阵」。
     """
     results = req.get("results")
     if not isinstance(results, list) or not results:
-        raise ValueError("placement 需要非空 results 数组（[{topic, score}]）")
+        raise ValueError("placement 需要非空 results 数组（[{topic, score}] 或带 type 的能力行）")
     entries = []
     seen = set()
     for item in results:
@@ -361,14 +515,48 @@ def _run_placement(req, data, day):
         if topic in seen:
             raise ValueError(f"placement 的 results 含重复知识点：{topic}")
         seen.add(topic)
-        entries.append(
-            {
-                "topic": topic,
-                "level": _round_half(_clamp_level(item.get("score"), "score")),
-                "date": day,
-                "source": PLACEMENT_SOURCE,
-            }
-        )
+        row_type = item.get("type", TYPE_KNOWLEDGE)
+        domain = item.get("domain") or ""
+        subdomain = item.get("subdomain") or ""
+        if row_type == TYPE_KNOWLEDGE:
+            entries.append(
+                {
+                    "domain": domain,
+                    "subdomain": subdomain,
+                    "topic": topic,
+                    "type": TYPE_KNOWLEDGE,
+                    "level": _round_half(_clamp_level(item.get("score"), "score")),
+                    "pre_status": DASH,
+                    "date": day,
+                    "source": PLACEMENT_SOURCE,
+                }
+            )
+        elif row_type == TYPE_ABILITY:
+            pre_status = item.get("pre_status")
+            if pre_status not in (PRE_STATUS_READY, PRE_STATUS_GAP):
+                raise ValueError(
+                    '能力行需要 pre_status 字段（"具备" / "未具备"）：' + topic
+                )
+            if "score" in item:
+                raise ValueError(
+                    f"能力行不需要 score（前置状态为二值）：{topic}"
+                )
+            entries.append(
+                {
+                    "domain": domain,
+                    "subdomain": subdomain,
+                    "topic": topic,
+                    "type": TYPE_ABILITY,
+                    "level": None,
+                    "pre_status": pre_status,
+                    "date": day,
+                    "source": PLACEMENT_SOURCE,
+                }
+            )
+        else:
+            raise ValueError(
+                f'placement 的 type 必须是 "{TYPE_KNOWLEDGE}" / "{TYPE_ABILITY}"：{row_type!r}'
+            )
 
     for entry in entries:
         idx = next(
@@ -382,11 +570,15 @@ def _run_placement(req, data, day):
 
     log_entry = f"- {day}：{PLACEMENT_SOURCE} → 初始矩阵"
     data["log"].append(log_entry)
-    # 输出视图与矩阵行同源（矩阵行键为 level，输出契约键为 score）
+    # 输出视图与矩阵行同源（矩阵行键为 level，输出契约键为 score；能力行 score = None）
     matrix = [
         {
             "topic": entry["topic"],
+            "type": entry["type"],
             "score": entry["level"],
+            "pre_status": entry["pre_status"],
+            "domain": entry["domain"],
+            "subdomain": entry["subdomain"],
             "date": entry["date"],
             "source": entry["source"],
         }
@@ -401,7 +593,11 @@ def _run_placement(req, data, day):
 
 
 def _run_acceptance(req, data, day):
-    """acceptance：验收完成度 ≥ 4 → 知识点 +0.5（上限 5）；难度反馈入日志不改矩阵。"""
+    """acceptance：验收完成度 ≥ 4 → 知识点 +0.5（上限 5）；难度反馈入日志不改矩阵。
+
+    矩阵外 topic：默认报错；输入 add_new: true（学习者已确认）→ 显式新增通道
+    新建矩阵行——知识点行初值 = 完成度（0.5 档截断），能力行写前置状态。
+    """
     topic = _require_topic(req)
     score = _clamp_level(req.get("score"), "score")
     difficulty = req.get("difficulty")
@@ -410,25 +606,57 @@ def _run_acceptance(req, data, day):
             f"difficulty 必须是 {'/'.join(DIFFICULTY_LEVELS)} 之一：{difficulty!r}"
         )
     source = _source_text(req.get("source"), "验收")
-    delta = PASS_DELTA if score >= ACCEPT_THRESHOLD else 0.0
     detail = f"完成度 {_number_text(score)}"
     if difficulty is not None:
         detail += f"，难度 {difficulty}"
-    out = _apply_delta(data, topic, delta, day, source, detail)
+    idx = _find_topic_or_none(data, topic)
+    if idx is None:
+        if not req.get("add_new"):
+            raise ValueError(f"知识点不在能力矩阵中（先经摸底测试初始化）：{topic}")
+        row_type, domain, subdomain, pre_status = _new_row_fields(req, topic)
+        level = _round_half(score) if row_type == TYPE_KNOWLEDGE else None
+        out = _apply_new_row(
+            data, topic, day, source, detail, row_type, level, pre_status,
+            domain, subdomain,
+        )
+        out.update({"score": score, "difficulty": difficulty})
+        return out
+    delta = PASS_DELTA if score >= ACCEPT_THRESHOLD else 0.0
+    out = _apply_delta(data, topic, delta, day, source, detail, idx=idx)
     out.update({"score": score, "difficulty": difficulty})
     return out
 
 
 def _run_review(req, data, day):
-    """review：复习考察通过 +0.5（上限 5）/ 未通过 -0.5（下限 1），写回能力矩阵。"""
+    """review：复习考察通过 +0.5（上限 5）/ 未通过 -0.5（下限 1），写回能力矩阵。
+
+    矩阵外 topic：默认报错；输入 add_new: true（学习者已确认）→ 显式新增通道
+    新建矩阵行——知识点行初值 通过 2.0 / 未通过 1.0（与 schedule.py add 默认
+    掌握度一致），能力行写前置状态。
+    """
     topic = _require_topic(req)
     result = req.get("result")
     if result not in ("pass", "fail"):
         raise ValueError('review 需要 result 字段（"pass" / "fail"）')
     source = _source_text(req.get("source"), "复习考察")
-    delta = PASS_DELTA if result == "pass" else -FAIL_DELTA
     detail = "通过" if result == "pass" else "未通过"
-    out = _apply_delta(data, topic, delta, day, source, detail)
+    idx = _find_topic_or_none(data, topic)
+    if idx is None:
+        if not req.get("add_new"):
+            raise ValueError(f"知识点不在能力矩阵中（先经摸底测试初始化）：{topic}")
+        row_type, domain, subdomain, pre_status = _new_row_fields(req, topic)
+        if row_type == TYPE_KNOWLEDGE:
+            level = NEW_PASS_LEVEL if result == "pass" else NEW_FAIL_LEVEL
+        else:
+            level = None
+        out = _apply_new_row(
+            data, topic, day, source, detail, row_type, level, pre_status,
+            domain, subdomain,
+        )
+        out.update({"result": result})
+        return out
+    delta = PASS_DELTA if result == "pass" else -FAIL_DELTA
+    out = _apply_delta(data, topic, delta, day, source, detail, idx=idx)
     out.update({"result": result})
     return out
 
@@ -450,8 +678,11 @@ def run(input_path, output_path):
     输入字段：date（可选，默认系统日期）、profile_path（可选，默认 "profile.md"，
     相对路径以输入文件所在目录为基准）、op（必填："onboarding" | "placement" |
     "acceptance" | "review"）；onboarding 另需 answers（8 题），placement 另需
-    results（[{topic, score}]），acceptance 另需 topic/score（difficulty/source
-    可选），review 另需 topic/result。
+    results（[{topic, score}] 知识点行，或带 type/domain/subdomain/pre_status 的
+    知识点/能力行），acceptance 另需 topic/score（difficulty/source 可选），
+    review 另需 topic/result。acceptance/review 的矩阵外新增通道（批次 4）：
+    topic 不在矩阵时置 add_new: true（学习者已确认）→ 新建矩阵行，可选
+    type/domain/subdomain（能力行另需 pre_status）。
     """
     input_path = Path(input_path)
     req = json.loads(input_path.read_text(encoding="utf-8"))

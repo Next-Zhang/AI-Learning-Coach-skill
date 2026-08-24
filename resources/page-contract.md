@@ -35,7 +35,7 @@ python scripts/page.py <input.json> <output.json>
 
 | 字段 | 必填 | 说明 |
 | --- | --- | --- |
-| `plan_path` | 是 | 学习计划文件路径，默认 `plan.md`。**相对路径以输入文件所在目录为基准**解析。 |
+| `plan_path` | 是 | 学习计划文件路径，默认 `plan.md`。**相对路径以输入文件所在目录为基准**解析。使用阶段 agent 一律**显式传** `.python-coach/state/plan.md`（六件套路径约定见 `resources/data-formats.md` 开头「工作区目录结构」）。 |
 | `day` | 是 | 当日任务标识，三种写法均可：`"Day 1"` / `"1"`（按 Day 编号）或 `"2026-08-20"`（按日期）。找不到报错。 |
 | `output_dir` | 否 | HTML 输出目录；**缺省时输出到系统临时目录**（ticket 06 要求）。相对路径以输入文件所在目录为基准解析。 |
 | `knowledge` | 否 | agent 从检索层（`scripts/retrieve.py`）提炼的当日知识内容数组（概念+示例）；未提供时脚本读取当日任务「来源」引用的本地 `sources/` 文件正文作为知识内容（见 §4）。 |
@@ -107,6 +107,7 @@ python scripts/page.py <input.json> <output.json>
   - `- 目标清单：` 后跟 `  - [ ] …` 子项
   - `- 知识点：`（逗号分隔，剥离反引号）
   - `- 来源：`（中文/英文分号或逗号分隔，`sources/` 文件名或 URL）
+- `- 前置：`（批次 2 新增的可选行，声明当日前置知识点/能力，见 `resources/data-formats.md` §1）**不由本脚本解析**——它是 agent 前置校验的输入，本脚本遇到未知行直接忽略，不影响解析。
 - 容错：无 frontmatter、字段缺失均解析为默认值；找不到当日任务报错。
 
 ## 6. 测试
@@ -126,3 +127,8 @@ python scripts/test_page.py        # 全部测试（Python unittest）
 2. （可选）用检索层 `scripts/retrieve.py` 检索当日知识点 → 提炼 `knowledge`（概念+示例）。
 3. 调本脚本：输入 `plan_path` + `day` + （可选）`output_dir` + （可选）`knowledge` → 拿到 `html_path`，把 HTML 呈现给学习者。
 4. 当日执行期间网页可勾选目标、随时离线查看；验收完成、当日总结写入后，提出删除、学习者确认后删除（approval 护栏）。
+
+## 8. 过程文件清理与网页生命周期
+
+- 脚本 in/out JSON 与自检副本（HTML/JSON）放 `.python-coach/tmp/`，**自检完成即清**（目录与时机见 `resources/data-formats.md`「工作区目录结构」）。
+- **当日执行网页 HTML**：存学习者可见位置（默认系统临时目录，会话中给出路径），验收与当日总结完成后由 ticket 12 提出删除、**学习者确认后才删**（唯一例外：该文件删除不走"内部清理"）。

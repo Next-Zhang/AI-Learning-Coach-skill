@@ -16,6 +16,8 @@ query 读 testdata/review/ 下的只读夹具（含一份 schedule.md 以验证�
 """
 import json
 import sys
+
+sys.dont_write_bytecode = True  # 运行期不写 __pycache__（等价 PYTHONDONTWRITEBYTECODE=1）
 import unittest
 from pathlib import Path
 
@@ -92,6 +94,26 @@ class _ReviewTest(unittest.TestCase):
 
     def _read_file(self, path):
         return Path(path).read_text(encoding="utf-8")
+
+    def _seed_doc03(self):
+        """在 _out/review/ 下先生成课程 03 快查文档（append 的目标）。"""
+        review.run(INPUTS / "gen-basic.json", self._out("append-seed-out.json"))
+        return REVIEW_OUT / "03-pandas-series-与-dataframe.md"
+
+    def _append_input(self, name, **overrides):
+        """写一份 op=append 的输入 JSON（默认追加 pandas.merge 到课程 03）。"""
+        data = {
+            "op": "append",
+            "review_path": "../review",
+            "course": 3,
+            "topic": "pandas.merge",
+            "concept": "按键合并两个 DataFrame",
+            "example": "pd.merge(df1, df2, on='key')",
+            "pitfall": "默认内连接；一对多会复制行",
+            "source": "sources/pandas-series.md",
+        }
+        data.update(overrides)
+        return self._write_input(name, data)
 
 
 class GenerateTest(_ReviewTest):
@@ -394,6 +416,190 @@ class QueryErrorTest(_ReviewTest):
     def test_bad_query_raises(self):
         with self.assertRaises(ValueError):
             review.run(INPUTS / "q-bad-query.json", self._out("q-bad-query-out.json"))
+
+
+class AppendTest(_ReviewTest):
+    """op=append：向当日课程的快查文档追加一行新知识点（批次 4 显式新增通道）。"""
+
+    def test_append_adds_point_line_and_topic(self):
+        doc = self._seed_doc03()
+        inp = self._append_input("append-basic.json")
+        result = review.run(inp, self._out("append-basic-out.json"))
+        self.assertEqual(result["op"], "append")
+        self.assertEqual(result["course"], 3)
+        self.assertEqual(result["course_label"], "03")
+        self.assertEqual(result["filename"], "03-pandas-series-与-dataframe.md")
+        self.assertEqual(result["added_topic"], "pandas.merge")
+        self.assertEqual(
+            result["topics"],
+            ["pandas.Series", "pandas.DataFrame", "pandas.merge"],
+        )
+        self.assertEqual(result["line_count"], 3)
+        # 输出文件内容与返回值一致
+        self.assertEqual(
+            json.loads(self._out("append-basic-out.json").read_text(encoding="utf-8")),
+            result,
+        )
+        # 文档原文：frontmatter topics 并入新知识点 + 末尾追加一行、原行顺序保持
+        text = self._read_file(doc)
+        self.assertTrue(
+            text.startswith(
+                "---\n"
+                "course: 03\n"
+                "date: 2026-08-23\n"
+                "topics: [pandas.Series, pandas.DataFrame, pandas.merge]\n"
+                "---\n"
+            )
+        )
+        self.assertIn("- **Series**：", text)
+        self.assertIn("- **DataFrame**：", text)
+        self.assertTrue(
+            text.rstrip().endswith(
+                "- **pandas.merge**：按键合并两个 DataFrame。"
+                "`pd.merge(df1, df2, on='key')`；"
+                "常见坑：默认内连接；一对多会复制行；来源：sources/pandas-series.md。"
+            )
+        )
+
+    def test_append_optional_fields_omitted(self):
+        # 无示例/无常见坑 → 追加行省略对应段（concept → 来源 直连）
+        self._seed_doc03()
+        inp = self._append_input(
+            "append-plain.json",
+            topic="数据透视",
+            concept="透视汇总",
+            source="sources/pandas-series.md",
+            example="",
+            pitfall="",
+        )
+        result = review.run(inp, self._out("append-plain-out.json"))
+        self.assertEqual(result["line_count"], 3)
+        self.assertEqual(result["point"]["example"], "")
+        self.assertEqual(result["point"]["pitfall"], "")
+        text = self._read_file(REVIEW_OUT / "03-pandas-series-与-dataframe.md")
+        self.assertTrue(
+            text.rstrip().endswith(
+                "- **数据透视**：透视汇总；来源：sources/pandas-series.md。"
+            )
+        )
+
+    def test_append_duplicate_topic_raises(self):
+        # 同一课程文档中已存在该知识点 → 拒绝重复追加
+        self._seed_doc03()
+        review.run(self._append_input("append-dup1.json"), self._out("append-dup1-out.json"))
+        with self.assertRaises(ValueError) as ctx:
+            review.run(
+                self._append_input("append-dup2.json"),
+                self._out("append-dup2-out.json"),
+            )
+        self.assertIn("已在当日快查文档中", str(ctx.exception))
+
+    def test_append_query_finds_new_topic(self):
+        # 追加后按新知识点可查阅到该文档（topics 并入生效）
+        self._seed_doc03()
+        review.run(self._append_input("append-q.json"), self._out("append-q-out.json"))
+        qinp = self._write_input(
+            "append-query.json",
+            {"op": "query", "review_path": "../review", "query": "merge"},
+        )
+        result = review.run(qinp, self._out("append-query-out.json"))
+        self.assertEqual(result["total_docs"], 1)
+        self.assertEqual(result["matches"][0]["file"], "03-pandas-series-与-dataframe.md")
+        self.assertEqual(
+            result["matches"][0]["topics"],
+            ["pandas.Series", "pandas.DataFrame", "pandas.merge"],
+        )
+
+    def test_main_append_writes_output(self):
+        self._seed_doc03()
+        out = self._out("cli-append-out.json")
+        code = review.main([str(self._append_input("cli-append.json")), str(out)])
+        self.assertEqual(code, 0)
+        self.assertTrue(out.exists())
+        self.assertEqual(json.loads(out.read_text(encoding="utf-8"))["op"], "append")
+
+
+class AppendErrorTest(_ReviewTest):
+    """op=append 输入错误处理。"""
+
+    def test_doc_not_found_raises(self):
+        # 课程尚未 generate → 无目标文档，报错（提示先 generate）
+        inp = self._write_input(
+            "append-nodoc.json",
+            {
+                "op": "append",
+                "review_path": "../review",
+                "course": 99,
+                "topic": "pandas.merge",
+                "concept": "按键合并两个 DataFrame",
+                "source": "sources/pandas-series.md",
+            },
+        )
+        with self.assertRaises(ValueError) as ctx:
+            review.run(inp, self._out("append-nodoc-out.json"))
+        self.assertIn("快查文档不存在", str(ctx.exception))
+
+    def test_missing_source_raises(self):
+        # 追加行缺来源：无依据断言禁止落盘（护栏「引用规范」）
+        self._seed_doc03()
+        inp = self._write_input(
+            "append-nosource.json",
+            {
+                "op": "append",
+                "review_path": "../review",
+                "course": 3,
+                "topic": "pandas.merge",
+                "concept": "按键合并两个 DataFrame",
+            },
+        )
+        with self.assertRaises(ValueError):
+            review.run(inp, self._out("append-nosource-out.json"))
+
+    def test_missing_concept_raises(self):
+        self._seed_doc03()
+        inp = self._write_input(
+            "append-noconcept.json",
+            {
+                "op": "append",
+                "review_path": "../review",
+                "course": 3,
+                "topic": "pandas.merge",
+                "source": "sources/pandas-series.md",
+            },
+        )
+        with self.assertRaises(ValueError):
+            review.run(inp, self._out("append-noconcept-out.json"))
+
+    def test_bad_course_raises(self):
+        inp = self._write_input(
+            "append-badcourse.json",
+            {
+                "op": "append",
+                "review_path": "../review",
+                "course": 100,
+                "topic": "pandas.merge",
+                "concept": "x",
+                "source": "sources/pandas-series.md",
+            },
+        )
+        with self.assertRaises(ValueError):
+            review.run(inp, self._out("append-badcourse-out.json"))
+
+    def test_topic_with_pipe_raises(self):
+        self._seed_doc03()
+        inp = self._write_input(
+            "append-badtopic.json",
+            {
+                "op": "append",
+                "review_path": "../review",
+                "course": 3,
+                "topic": "a|b",
+                "concept": "x",
+                "source": "sources/pandas-series.md",
+            },
+        )
+        with self.assertRaises(ValueError):
+            review.run(inp, self._out("append-badtopic-out.json"))
 
 
 class CommonErrorTest(_ReviewTest):

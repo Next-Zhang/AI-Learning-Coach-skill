@@ -1,6 +1,6 @@
 # Onboarding 问卷流程契约（ticket 07）
 
-起步流程第 1 步的对话式 onboarding 问卷：**8 题、一问一答、答案确认后写入 `profile.md` 画像初值**。本契约是技能内接口——agent 按本文档执行对话收集答案，确认后交给 `scripts/profile.py`（`op=onboarding`）写画像。
+起步流程第 1 步的对话式 onboarding 问卷：**8 题、一问一答、答案确认后写入 `.python-coach/state/profile.md` 画像初值**。本契约是技能内接口——agent 按本文档执行对话收集答案，确认后交给 `scripts/profile.py`（`op=onboarding`）写画像。
 
 按 spec「测试 seam」：对话式流程（计划生成、验收对话等）**不设自动化 seam**，构建后通过实际演练验证；本文档定义对话协议本身。写入路径由 `scripts/profile.py` 提供并有自动化测试（ticket 05，见 `resources/profile-contract.md` §7），本文档不再重复其输入输出格式，只规定对话层如何收集、校验、确认答案并调用它。
 
@@ -71,8 +71,8 @@ python scripts/profile.py <input.json> <output.json>
 }
 ```
 
-   输入输出格式见 `resources/profile-contract.md` §2–§3，用法与退出码见 §1；`date`/`profile_path` 缺省即可（默认系统日期、`profile.md`）。
-3. **approval 护栏**：`profile.py` 会**原地改写** `profile.md`（文件不存在时创建；已存在时覆盖问卷初值、保留能力矩阵与增量记录），属持久层修改，执行前先经学习者确认（SKILL.md 护栏 approval）。
+   输入输出格式见 `resources/profile-contract.md` §2–§3，用法与退出码见 §1；`date` 缺省即可，**`profile_path` 一律显式传 `.python-coach/state/profile.md`**（六件套路径约定见 `resources/data-formats.md` 开头「工作区目录结构」）；输入 JSON 暂存 `.python-coach/state/`（见 §6 清理条款）。
+3. **approval 护栏**：`profile.py` 会**原地改写** `.python-coach/state/profile.md`（文件不存在时创建；已存在时覆盖问卷初值、保留能力矩阵与增量记录），属持久层修改，执行前先经学习者确认（SKILL.md 护栏 approval）。
 4. **写入后**：确认画像已建立（可简述"已记录你的画像"），进入起步流程下一步（ticket 08 目标澄清与范围声明）。
 
 ## 6. 边界与护栏
@@ -82,9 +82,10 @@ python scripts/profile.py <input.json> <output.json>
 - 中途退出：学习者想退出时说明画像未建立、下次可重新开始；**不写半成品**——`profile.py` 要求 8 题齐全，缺字段会报错（profile-contract.md §2），对话层也不得用占位答案凑数。
 - 已有画像重跑（学习者想重做问卷）：走同一流程，覆盖问卷初值；能力矩阵与增量记录保留（`profile.py` `onboarding` 行为，见 profile-contract.md §5）。
 - 数值自评超范围：对话层先请学习者重答；`profile.py` 的 [1, 5] 截断仅作兜底，不依赖它。
+- **过程文件清理**（目录与时机见 `resources/data-formats.md`「工作区目录结构」）：onboarding 输入 JSON 暂存 `.python-coach/state/`，**起步完成即清**——onboarding 可能跨会话进行，故暂存不入 `.python-coach/tmp/`；`profile.py op=onboarding` 的 in/out JSON 同批存在、起步完成随其清理。清理为 agent 内部动作，不需逐条向学习者确认。
 
 ## 7. 验证方式
 
 - 本流程为对话式流程，按 spec「测试 seam」**不设自动化 seam**，构建后通过**实际演练验证**：模拟学习者一问一答（含一次中途修改）→ 汇总确认 → `profile.py op=onboarding` 写画像 → 检查 `profile.md` 原文（8 题初值、空矩阵、onboarding 日志）。
-- **演练记录（2026-08-20，ticket 07 构建时）**：模拟对话收集 8 题（第 1 题经一次中途修改后更新为最终答案；第 2 题先答 "7" 被提示 1–5 范围后改答 "2"）→ 汇总确认 → `profile.py`（`op=onboarding`）写画像，退出码 0 → 检查 `profile.md` 原文：8 题初值齐全、能力矩阵为空、增量记录含 `onboarding 问卷 → 画像初值` 一条，符合 §5 预期。
+- **演练记录（2026-08-20，ticket 07 构建时）**：模拟一问一答收集 8 题（含一次中途修改、一次 1–5 范围纠答）→ 汇总确认 → `profile.py op=onboarding` 写画像退出码 0 → 检查 `profile.md` 原文符合 §5 预期。旧演练实体产物已随版本清理。
 - 写入路径的自动化测试见 `scripts/test_profile.py` 的 `OnboardingTest`（ticket 05）：创建文件 / 覆盖保留矩阵 / 8 题校验 / 数值截断 / 缺字段报错等。

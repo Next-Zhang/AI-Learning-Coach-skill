@@ -15,6 +15,8 @@
 """
 import json
 import sys
+
+sys.dont_write_bytecode = True  # 运行期不写 __pycache__（等价 PYTHONDONTWRITEBYTECODE=1）
 from pathlib import Path
 
 # 合成权重（7:3；以十分位整数运算，见 synthesize 注释）

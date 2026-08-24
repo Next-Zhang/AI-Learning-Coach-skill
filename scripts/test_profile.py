@@ -14,6 +14,8 @@
 """
 import json
 import sys
+
+sys.dont_write_bytecode = True  # 运行期不写 __pycache__（等价 PYTHONDONTWRITEBYTECODE=1）
 import unittest
 from pathlib import Path
 
@@ -42,9 +44,9 @@ ONBOARDING_BASIC = (
     "- 复习意愿：愿意每天 10 分钟"
 )
 MATRIX_HEAD = (
-    "## 能力矩阵（知识点 × 水平分 1–5）\n"
-    "| 知识点 | 水平分 | 更新时间 | 来源 |\n"
-    "| --- | --- | --- | --- |\n"
+    "## 能力矩阵（领域 → 子领域 → 知识点/能力）\n"
+    "| 领域 | 子领域 | 知识点 | 类型 | 水平分 | 前置状态 | 更新时间 | 来源 |\n"
+    "| --- | --- | --- | --- | --- | --- | --- | --- |\n"
 )
 
 
@@ -133,8 +135,14 @@ class OnboardingTest(_ProfileTest):
         text = self._read_file(PROFILE_OUT / "onboard-overwrite.md")
         self.assertIn("## Onboarding 问卷（8 题）\n- 学习目标：用 Python 做自动化脚本", text)
         self.assertNotIn("视频 + 动手练习", text)
-        self.assertIn("| pandas.Series | 1.5 | 2026-08-20 | 摸底测试 |", text)
-        self.assertIn("| pandas.DataFrame | 3 | 2026-08-20 | 摸底测试 |", text)
+        self.assertIn(
+            "| 数据分析 | pandas | pandas.Series | 知识点 | 1.5 | — | 2026-08-20 | 摸底测试 |",
+            text,
+        )
+        self.assertIn(
+            "| 数据分析 | pandas | pandas.DataFrame | 知识点 | 3 | — | 2026-08-20 | 摸底测试 |",
+            text,
+        )
         # 既有日志保留、新事件追加在末尾、updated 更新
         self.assertTrue(
             text.endswith(
@@ -248,8 +256,8 @@ class AcceptanceTest(_ProfileTest):
             + "\n"
             "\n"
             + MATRIX_HEAD
-            + "| pandas.Series | 2 | 2026-08-21 | 验收 Day 1 |\n"
-            + "| pandas.DataFrame | 3 | 2026-08-20 | 摸底测试 |\n"
+            + "| 数据分析 | pandas | pandas.Series | 知识点 | 2 | — | 2026-08-21 | 验收 Day 1 |\n"
+            + "| 数据分析 | pandas | pandas.DataFrame | 知识点 | 3 | — | 2026-08-20 | 摸底测试 |\n"
             + "\n"
             + "## 增量记录\n"
             + "- 2026-08-20：摸底测试 → 初始矩阵\n"
@@ -281,7 +289,10 @@ class AcceptanceTest(_ProfileTest):
             "- 2026-08-21：验收 Day 1（完成度 2，难度 太难）→ pandas.Series 矩阵不变",
         )
         text = self._read_file(PROFILE_OUT / "acc-low.md")
-        self.assertIn("| pandas.Series | 1.5 | 2026-08-20 | 摸底测试 |", text)
+        self.assertIn(
+            "| 数据分析 | pandas | pandas.Series | 知识点 | 1.5 | — | 2026-08-20 | 摸底测试 |",
+            text,
+        )
         self.assertIn("- 2026-08-21：验收 Day 1（完成度 2，难度 太难）→ pandas.Series 矩阵不变\n", text)
 
     def test_acceptance_caps_at_five(self):
@@ -301,7 +312,10 @@ class AcceptanceTest(_ProfileTest):
         self._copy_profile("basic.md", "acc-no-source.md")
         result, _ = self._run("acc-no-source.json", "acc-no-source-out.json")
         self.assertEqual(result["source"], "验收")
-        self.assertIn("| pandas.Series | 2 | 2026-08-21 | 验收 |", self._read_file(PROFILE_OUT / "acc-no-source.md"))
+        self.assertIn(
+            "| 数据分析 | pandas | pandas.Series | 知识点 | 2 | — | 2026-08-21 | 验收 |",
+            self._read_file(PROFILE_OUT / "acc-no-source.md"),
+        )
 
     def test_acceptance_writes_frontmatter_when_missing(self):
         # 无 frontmatter 的画像：写回时补 created/updated
@@ -340,8 +354,14 @@ class AcceptanceTest(_ProfileTest):
         )
         profile.run(inp, self._out("acc-dirty-out.json"))
         text = self._read_file(PROFILE_OUT / "acc-dirty.md")
-        self.assertIn("| pandas.Series | 2.5 | 2026-08-21 | 验收 Day 1 |", text)
-        self.assertIn("| pandas.DataFrame | 3 | 2026-08-20 | 摸底测试 |", text)
+        self.assertIn(
+            "| 数据分析 | pandas | pandas.Series | 知识点 | 2.5 | — | 2026-08-21 | 验收 Day 1 |",
+            text,
+        )
+        self.assertIn(
+            "| 数据分析 | pandas | pandas.DataFrame | 知识点 | 3 | — | 2026-08-20 | 摸底测试 |",
+            text,
+        )
         self.assertNotIn("坏行", text)
 
     def test_acceptance_preserves_missing_onboarding_as_placeholder(self):
@@ -361,7 +381,10 @@ class AcceptanceTest(_ProfileTest):
         profile.run(inp, self._out("acc-noonb-out.json"))
         text = self._read_file(PROFILE_OUT / "acc-noonb.md")
         self.assertIn("## Onboarding 问卷（8 题）\n- 学习目标：\n", text)
-        self.assertIn("| pandas.Series | 2.5 | 2026-08-21 | 验收 Day 1 |", text)
+        self.assertIn(
+            "| 数据分析 | pandas | pandas.Series | 知识点 | 2.5 | — | 2026-08-21 | 验收 Day 1 |",
+            text,
+        )
 
     def test_acceptance_missing_topic_raises(self):
         self._copy_profile("basic.md", "acc-missing.md")
@@ -392,6 +415,49 @@ class AcceptanceTest(_ProfileTest):
         with self.assertRaises(ValueError):
             profile.run(INPUTS / "acc-bad-topic.json", self._out("acc-badtopic-out.json"))
 
+    def test_acceptance_on_capability_row_raises(self):
+        # 能力行无水平分（前置状态二值）→ 不接受验收增量
+        self._copy_profile("capability.md", "acc-caprow.md")
+        inp = self._write_input(
+            "acc-caprow.json",
+            {
+                "date": "2026-08-21",
+                "profile_path": "../profile/acc-caprow.md",
+                "op": "acceptance",
+                "topic": "Python 工程组织",
+                "score": 4,
+                "source": "验收 Day 1",
+            },
+        )
+        with self.assertRaises(ValueError):
+            profile.run(inp, self._out("acc-caprow-out.json"))
+
+    def test_legacy_four_column_matrix_tolerated(self):
+        # 旧 4 列画像（无 领域/子领域/类型/前置状态）解析容错：
+        # 视作知识点行（前置状态 = —），验收增量写回后仍按新 8 列 schema 落盘
+        self._copy_profile("legacy.md", "acc-legacy.md")
+        inp = self._write_input(
+            "acc-legacy.json",
+            {
+                "date": "2026-08-21",
+                "profile_path": "../profile/acc-legacy.md",
+                "op": "acceptance",
+                "topic": "pandas.Series",
+                "score": 4,
+                "source": "验收 Day 1",
+            },
+        )
+        profile.run(inp, self._out("acc-legacy-out.json"))
+        text = self._read_file(PROFILE_OUT / "acc-legacy.md")
+        self.assertIn(
+            "|  |  | pandas.Series | 知识点 | 2.5 | — | 2026-08-21 | 验收 Day 1 |",
+            text,
+        )
+        self.assertIn(
+            "|  |  | pandas.DataFrame | 知识点 | 3 | — | 2026-08-20 | 摸底测试 |",
+            text,
+        )
+
 
 class ReviewTest(_ProfileTest):
     """op=review：复习考察得分写回能力矩阵（与调度表同一规则）。"""
@@ -410,7 +476,7 @@ class ReviewTest(_ProfileTest):
             "- 2026-08-21：复习考察（通过）→ pandas.Series +0.5（1.5→2）",
         )
         self.assertIn(
-            "| pandas.Series | 2 | 2026-08-21 | 复习考察 |",
+            "| 数据分析 | pandas | pandas.Series | 知识点 | 2 | — | 2026-08-21 | 复习考察 |",
             self._read_file(PROFILE_OUT / "rev-pass.md"),
         )
 
@@ -453,6 +519,239 @@ class ReviewTest(_ProfileTest):
             )
 
 
+class NewTopicChannelTest(_ProfileTest):
+    """批次 4 显式新增通道：acceptance/review 的矩阵外 topic 经 add_new 放行新建行。"""
+
+    def _new_input(self, name, data):
+        return self._write_input(name, {"date": "2026-08-21", **data})
+
+    def test_acceptance_add_new_knowledge_row(self):
+        # 矩阵外知识点 + add_new → 新建知识点行：初值 = 完成度（0.5 档截断），
+        # 来源「验收新增 Day 3」；原有行与问卷保留、日志追加
+        self._copy_profile("basic.md", "acc-new.md")
+        inp = self._new_input(
+            "acc-new.json",
+            {
+                "profile_path": "../profile/acc-new.md",
+                "op": "acceptance",
+                "topic": "pandas.merge",
+                "score": 4,
+                "difficulty": "刚好",
+                "source": "验收新增 Day 3",
+                "add_new": True,
+                "domain": "数据分析",
+                "subdomain": "pandas",
+            },
+        )
+        result = profile.run(inp, self._out("acc-new-out.json"))
+        self.assertTrue(result["added"])
+        self.assertEqual(result["old_score"], None)
+        self.assertEqual(result["new_score"], 4.0)
+        self.assertEqual(result["delta"], None)
+        self.assertTrue(result["updated"])
+        self.assertEqual(
+            result["log_entry"],
+            "- 2026-08-21：验收新增 Day 3（完成度 4，难度 刚好）→ 新增知识点 pandas.merge（水平 4）",
+        )
+        text = self._read_file(PROFILE_OUT / "acc-new.md")
+        self.assertIn(
+            "| 数据分析 | pandas | pandas.merge | 知识点 | 4 | — | 2026-08-21 | 验收新增 Day 3 |",
+            text,
+        )
+        self.assertIn(
+            "| 数据分析 | pandas | pandas.Series | 知识点 | 1.5 | — | 2026-08-20 | 摸底测试 |",
+            text,
+        )
+        self.assertTrue(
+            text.endswith(
+                "## 增量记录\n"
+                "- 2026-08-20：摸底测试 → 初始矩阵\n"
+                "- 2026-08-21：验收新增 Day 3（完成度 4，难度 刚好）→ 新增知识点 pandas.merge（水平 4）\n"
+            )
+        )
+
+    def test_acceptance_add_new_low_score_still_creates_row(self):
+        # 完成度 2 < 4：既有行不变，但新增行照常创建（初值 = 完成度 2）
+        self._copy_profile("basic.md", "acc-new-low.md")
+        inp = self._new_input(
+            "acc-new-low.json",
+            {
+                "profile_path": "../profile/acc-new-low.md",
+                "op": "acceptance",
+                "topic": "pandas.merge",
+                "score": 2,
+                "source": "验收新增 Day 3",
+                "add_new": True,
+            },
+        )
+        result = profile.run(inp, self._out("acc-new-low-out.json"))
+        self.assertTrue(result["added"])
+        self.assertEqual(result["new_score"], 2.0)
+        self.assertEqual(
+            result["log_entry"],
+            "- 2026-08-21：验收新增 Day 3（完成度 2）→ 新增知识点 pandas.merge（水平 2）",
+        )
+
+    def test_acceptance_add_new_ability_row(self):
+        # 类型 = 能力 → 新建能力行：水平分 = —、前置状态二值（pre_status 必填）；
+        # score 仍为当日完成度（记录进日志详情），不写入矩阵数值
+        self._copy_profile("basic.md", "acc-new-ability.md")
+        inp = self._new_input(
+            "acc-new-ability.json",
+            {
+                "profile_path": "../profile/acc-new-ability.md",
+                "op": "acceptance",
+                "topic": "数据工程组织",
+                "type": "能力",
+                "pre_status": "未具备",
+                "score": 4,
+                "source": "验收新增 Day 3",
+                "add_new": True,
+            },
+        )
+        result = profile.run(inp, self._out("acc-new-ability-out.json"))
+        self.assertTrue(result["added"])
+        self.assertIsNone(result["new_score"])
+        self.assertEqual(
+            result["log_entry"],
+            "- 2026-08-21：验收新增 Day 3（完成度 4）→ 新增能力 数据工程组织（前置状态 未具备）",
+        )
+        text = self._read_file(PROFILE_OUT / "acc-new-ability.md")
+        self.assertIn(
+            "|  |  | 数据工程组织 | 能力 | — | 未具备 | 2026-08-21 | 验收新增 Day 3 |",
+            text,
+        )
+
+    def test_acceptance_add_new_requires_flag(self):
+        # 未带 add_new → 维持原行为：矩阵外 topic 报错
+        self._copy_profile("basic.md", "acc-new-noflag.md")
+        inp = self._new_input(
+            "acc-new-noflag.json",
+            {
+                "profile_path": "../profile/acc-new-noflag.md",
+                "op": "acceptance",
+                "topic": "pandas.merge",
+                "score": 4,
+            },
+        )
+        with self.assertRaises(ValueError):
+            profile.run(inp, self._out("acc-new-noflag-out.json"))
+
+    def test_acceptance_add_new_bad_type_raises(self):
+        self._copy_profile("basic.md", "acc-new-badtype.md")
+        inp = self._new_input(
+            "acc-new-badtype.json",
+            {
+                "profile_path": "../profile/acc-new-badtype.md",
+                "op": "acceptance",
+                "topic": "pandas.merge",
+                "score": 4,
+                "type": "技能",
+                "add_new": True,
+            },
+        )
+        with self.assertRaises(ValueError):
+            profile.run(inp, self._out("acc-new-badtype-out.json"))
+
+    def test_acceptance_add_new_ability_missing_pre_status_raises(self):
+        # 能力行缺 pre_status → 报错（不能写半成品能力行）
+        self._copy_profile("basic.md", "acc-new-nostatus.md")
+        inp = self._new_input(
+            "acc-new-nostatus.json",
+            {
+                "profile_path": "../profile/acc-new-nostatus.md",
+                "op": "acceptance",
+                "topic": "数据工程组织",
+                "type": "能力",
+                "add_new": True,
+            },
+        )
+        with self.assertRaises(ValueError):
+            profile.run(inp, self._out("acc-new-nostatus-out.json"))
+
+    def test_add_new_ignored_for_existing_topic(self):
+        # 矩阵内 topic 带 add_new → 走正常增量路径（新增通道只对矩阵外生效）
+        self._copy_profile("basic.md", "acc-new-existing.md")
+        inp = self._new_input(
+            "acc-new-existing.json",
+            {
+                "profile_path": "../profile/acc-new-existing.md",
+                "op": "acceptance",
+                "topic": "pandas.Series",
+                "score": 4,
+                "source": "验收 Day 1",
+                "add_new": True,
+            },
+        )
+        result = profile.run(inp, self._out("acc-new-existing-out.json"))
+        self.assertNotIn("added", result)
+        self.assertEqual(result["old_score"], 1.5)
+        self.assertEqual(result["new_score"], 2.0)
+        self.assertEqual(result["delta"], 0.5)
+
+    def test_review_add_new_pass_creates_row(self):
+        # 复习新增：通过 → 初值 2.0（与 schedule.py add 默认掌握度一致）
+        self._copy_profile("basic.md", "rev-new-pass.md")
+        inp = self._new_input(
+            "rev-new-pass.json",
+            {
+                "profile_path": "../profile/rev-new-pass.md",
+                "op": "review",
+                "topic": "pandas.merge",
+                "result": "pass",
+                "source": "复习新增",
+                "add_new": True,
+            },
+        )
+        result = profile.run(inp, self._out("rev-new-pass-out.json"))
+        self.assertTrue(result["added"])
+        self.assertEqual(result["new_score"], 2.0)
+        self.assertEqual(
+            result["log_entry"],
+            "- 2026-08-21：复习新增（通过）→ 新增知识点 pandas.merge（水平 2）",
+        )
+        self.assertIn(
+            "|  |  | pandas.merge | 知识点 | 2 | — | 2026-08-21 | 复习新增 |",
+            self._read_file(PROFILE_OUT / "rev-new-pass.md"),
+        )
+
+    def test_review_add_new_fail_creates_row(self):
+        # 复习新增：未通过 → 初值 1.0（下限）
+        self._copy_profile("basic.md", "rev-new-fail.md")
+        inp = self._new_input(
+            "rev-new-fail.json",
+            {
+                "profile_path": "../profile/rev-new-fail.md",
+                "op": "review",
+                "topic": "pandas.merge",
+                "result": "fail",
+                "source": "复习新增",
+                "add_new": True,
+            },
+        )
+        result = profile.run(inp, self._out("rev-new-fail-out.json"))
+        self.assertTrue(result["added"])
+        self.assertEqual(result["new_score"], 1.0)
+        self.assertEqual(
+            result["log_entry"],
+            "- 2026-08-21：复习新增（未通过）→ 新增知识点 pandas.merge（水平 1）",
+        )
+
+    def test_review_add_new_requires_flag(self):
+        self._copy_profile("basic.md", "rev-new-noflag.md")
+        inp = self._new_input(
+            "rev-new-noflag.json",
+            {
+                "profile_path": "../profile/rev-new-noflag.md",
+                "op": "review",
+                "topic": "pandas.merge",
+                "result": "pass",
+            },
+        )
+        with self.assertRaises(ValueError):
+            profile.run(inp, self._out("rev-new-noflag-out.json"))
+
+
 class PlacementTest(_ProfileTest):
     """op=placement：摸底测试结果初始化能力矩阵。"""
 
@@ -464,7 +763,16 @@ class PlacementTest(_ProfileTest):
         self.assertEqual(result["count"], 4)
         self.assertEqual(
             result["matrix"][0],
-            {"topic": "变量与数据类型", "score": 1.5, "date": "2026-08-20", "source": "摸底测试"},
+            {
+                "topic": "变量与数据类型",
+                "type": "知识点",
+                "score": 1.5,
+                "pre_status": "—",
+                "domain": "",
+                "subdomain": "",
+                "date": "2026-08-20",
+                "source": "摸底测试",
+            },
         )
         self.assertEqual(result["log_entry"], "- 2026-08-20：摸底测试 → 初始矩阵")
         self.assertEqual(json.loads(out.read_text(encoding="utf-8")), result)
@@ -476,10 +784,10 @@ class PlacementTest(_ProfileTest):
         self.assertIn("## Onboarding 问卷（8 题）\n- 学习目标：\n", text)
         self.assertIn(
             MATRIX_HEAD
-            + "| 变量与数据类型 | 1.5 | 2026-08-20 | 摸底测试 |\n"
-            + "| 条件与循环 | 1 | 2026-08-20 | 摸底测试 |\n"
-            + "| pandas.Series | 1.5 | 2026-08-20 | 摸底测试 |\n"
-            + "| 数据读取与筛选 | 2.5 | 2026-08-20 | 摸底测试 |\n",
+            + "|  |  | 变量与数据类型 | 知识点 | 1.5 | — | 2026-08-20 | 摸底测试 |\n"
+            + "|  |  | 条件与循环 | 知识点 | 1 | — | 2026-08-20 | 摸底测试 |\n"
+            + "|  |  | pandas.Series | 知识点 | 1.5 | — | 2026-08-20 | 摸底测试 |\n"
+            + "|  |  | 数据读取与筛选 | 知识点 | 2.5 | — | 2026-08-20 | 摸底测试 |\n",
             text,
         )
         self.assertTrue(
@@ -497,8 +805,15 @@ class PlacementTest(_ProfileTest):
         self.assertEqual(result["matrix"][1]["score"], 3.0)
         text = self._read_file(PROFILE_OUT / "placement-up.md")
         self.assertIn("- 学习目标：用 Python 做数据分析\n", text)
-        self.assertIn("| pandas.Series | 2.5 | 2026-08-20 | 摸底测试 |", text)
-        self.assertIn("| pandas.DataFrame | 3 | 2026-08-20 | 摸底测试 |", text)
+        # placement 行整体覆盖：输入未带领域/子领域 → 新行为空（来源/日期更新）
+        self.assertIn(
+            "|  |  | pandas.Series | 知识点 | 2.5 | — | 2026-08-20 | 摸底测试 |",
+            text,
+        )
+        self.assertIn(
+            "|  |  | pandas.DataFrame | 知识点 | 3 | — | 2026-08-20 | 摸底测试 |",
+            text,
+        )
         self.assertTrue(
             text.endswith(
                 "## 增量记录\n"
@@ -518,10 +833,10 @@ class PlacementTest(_ProfileTest):
         self.assertEqual(by_topic["函数"], 3.0)
         self.assertEqual(by_topic["Excel 读写"], 2.5)
         text = self._read_file(PROFILE_OUT / "placement-clamp.md")
-        self.assertIn("| 变量与数据类型 | 1 | 2026-08-20 | 摸底测试 |", text)
-        self.assertIn("| pandas.Series | 5 | 2026-08-20 | 摸底测试 |", text)
-        self.assertIn("| 函数 | 3 | 2026-08-20 | 摸底测试 |", text)
-        self.assertIn("| Excel 读写 | 2.5 | 2026-08-20 | 摸底测试 |", text)
+        self.assertIn("|  |  | 变量与数据类型 | 知识点 | 1 | — | 2026-08-20 | 摸底测试 |", text)
+        self.assertIn("|  |  | pandas.Series | 知识点 | 5 | — | 2026-08-20 | 摸底测试 |", text)
+        self.assertIn("|  |  | 函数 | 知识点 | 3 | — | 2026-08-20 | 摸底测试 |", text)
+        self.assertIn("|  |  | Excel 读写 | 知识点 | 2.5 | — | 2026-08-20 | 摸底测试 |", text)
 
     def test_placement_duplicate_topic_raises(self):
         with self.assertRaises(ValueError):
@@ -570,6 +885,101 @@ class PlacementTest(_ProfileTest):
                 INPUTS / "placement-bad-score.json",
                 self._out("placement-badscore-out.json"),
             )
+
+    def test_placement_with_capability_rows(self):
+        # 能力行（type=能力 + pre_status）与知识点行（可带领域/子领域）混合写入；
+        # 能力行水平分 = —、前置状态二值；知识点行前置状态 = —
+        result, _ = self._run("placement-cap.json", "placement-cap-out.json")
+        self.assertEqual(result["count"], 3)
+        by_topic = {row["topic"]: row for row in result["matrix"]}
+        self.assertEqual(
+            by_topic["pandas.Series"],
+            {
+                "topic": "pandas.Series",
+                "type": "知识点",
+                "score": 1.5,
+                "pre_status": "—",
+                "domain": "数据分析",
+                "subdomain": "pandas",
+                "date": "2026-08-20",
+                "source": "摸底测试",
+            },
+        )
+        self.assertEqual(
+            by_topic["Python 工程组织"],
+            {
+                "topic": "Python 工程组织",
+                "type": "能力",
+                "score": None,
+                "pre_status": "未具备",
+                "domain": "工程",
+                "subdomain": "工程素养",
+                "date": "2026-08-20",
+                "source": "摸底测试",
+            },
+        )
+        text = self._read_file(PROFILE_OUT / "placement-cap.md")
+        self.assertIn(
+            "| 数据分析 | pandas | pandas.Series | 知识点 | 1.5 | — | 2026-08-20 | 摸底测试 |",
+            text,
+        )
+        self.assertIn(
+            "| 工程 | 工程素养 | Python 工程组织 | 能力 | — | 未具备 | 2026-08-20 | 摸底测试 |",
+            text,
+        )
+        self.assertIn(
+            "| 编程基础 | 面向对象 | OOP 类与对象 | 知识点 | 2 | — | 2026-08-20 | 摸底测试 |",
+            text,
+        )
+
+    def test_placement_capability_missing_pre_status_raises(self):
+        # 能力行缺 pre_status → 报错（不能写半成品能力行）
+        with self.assertRaises(ValueError):
+            profile.run(
+                INPUTS / "placement-cap-bad-status.json",
+                self._out("placement-capbad-out.json"),
+            )
+
+    def test_placement_capability_with_score_raises(self):
+        # 能力行带 score → 报错（前置状态二值，无水平分）
+        with self.assertRaises(ValueError):
+            profile.run(
+                INPUTS / "placement-cap-with-score.json",
+                self._out("placement-capscore-out.json"),
+            )
+
+    def test_placement_bad_type_raises(self):
+        # type 不是 知识点|能力 → 报错
+        with self.assertRaises(ValueError):
+            profile.run(
+                INPUTS / "placement-bad-type.json",
+                self._out("placement-badtype-out.json"),
+            )
+
+    def test_placement_preserves_capability_row_on_upsert(self):
+        # capability.md 副本：只 upsert 知识点行，能力行保持不动
+        self._copy_profile("capability.md", "placement-cap-up.md")
+        inp = self._write_input(
+            "placement-cap-up.json",
+            {
+                "date": "2026-08-20",
+                "profile_path": "../profile/placement-cap-up.md",
+                "op": "placement",
+                "results": [
+                    {"topic": "pandas.Series", "score": 2.5},
+                ],
+            },
+        )
+        profile.run(inp, self._out("placement-cap-up-out.json"))
+        text = self._read_file(PROFILE_OUT / "placement-cap-up.md")
+        self.assertIn(
+            "| 工程 | 工程素养 | Python 工程组织 | 能力 | — | 未具备 | 2026-08-20 | 摸底测试 |",
+            text,
+        )
+        self.assertIn(
+            "|  |  | pandas.Series | 知识点 | 2.5 | — | 2026-08-20 | 摸底测试 |",
+            text,
+        )
 
 
 class ErrorTest(_ProfileTest):

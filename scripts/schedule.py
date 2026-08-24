@@ -17,6 +17,8 @@
 """
 import json
 import sys
+
+sys.dont_write_bytecode = True  # 运行期不写 __pycache__（等价 PYTHONDONTWRITEBYTECODE=1）
 from datetime import date, datetime, timedelta
 from pathlib import Path
 

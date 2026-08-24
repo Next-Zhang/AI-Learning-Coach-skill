@@ -16,6 +16,8 @@ v0 检索策略（ADR-0002，数据格式先行、引擎后置）：
 import json
 import re
 import sys
+
+sys.dont_write_bytecode = True  # 运行期不写 __pycache__（等价 PYTHONDONTWRITEBYTECODE=1）
 from pathlib import Path
 
 # frontmatter 五字段（ADR-0002 契约字段，勿改名/删减）

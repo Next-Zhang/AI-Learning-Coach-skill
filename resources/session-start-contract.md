@@ -16,12 +16,17 @@
 
 ## 2. 起点与前置
 
-- **前置**：`plan.md` 已生效（`status: active`，每日任务齐备，ticket 10）、`profile.md` 能力矩阵已建立（ticket 09）、复习调度表 `review/schedule.md` 与复习快查文档 `review/` 就位（至少覆盖已完成课程，ticket 13 起持续维护）。
-- **读取**（会话开头逐一读，只读）：`plan.md`（frontmatter `goal`/`scope_covered`/`scope_excluded` + 定位当日 Day 区块）、`review/schedule.md`、`profile.md`（能力矩阵）、`progress.md`（昨日进展，供一句衔接语）。
+- **前置**：`.python-coach/state/plan.md` 已生效（`status: active`，每日任务齐备，ticket 10）、`.python-coach/state/profile.md` 能力矩阵已建立（ticket 09，含知识点行与能力行前置状态）、复习调度表 `.python-coach/state/review/schedule.md` 与复习快查文档 `.python-coach/state/review/` 就位（至少覆盖已完成课程，ticket 13 起持续维护）。
+- **读取**（会话开头逐一读，只读，六件套均在 `.python-coach/state/`，路径约定见 `resources/data-formats.md` 开头「工作区目录结构」）：`.python-coach/state/plan.md`（frontmatter `goal`/`scope_covered`/`scope_excluded` + 定位当日 Day 区块，含 `- 前置：` 声明）、`.python-coach/state/review/schedule.md`、`.python-coach/state/profile.md`（能力矩阵，含类型/水平分/前置状态）、`.python-coach/state/progress.md`（昨日进展，供一句衔接语）。
 - **开场示例**："欢迎回到 Day N（主题：…）。先复习今天的到期知识点，然后我们生成今天的执行页，开始干活。"
 - **分支**（当日任务定位后判断）：
   - 调度表为空或今天无到期 → 跳过复习考察；
   - 无历史知识点（新计划首日）→ 跳过随机抽查热场；
+  - **引用自检（批次 3）**：行前调 `scripts/check.py`（`day`=当日、`plan_path`/`profile_path` 显式传 `.python-coach/state/…`，in/out JSON 放 `.python-coach/tmp/`，契约见 `resources/check-contract.md`）核对当日 Day 的「知识点」「前置」**引用存在性**（是否都在能力矩阵中、知识点是否误引能力行）——**error 级 → 先修复再执行当日任务**（对齐矩阵行名或补矩阵行），warning 级（历史类问题）→ 记录、择机修复，不阻断当日；引用自检与下面的前置缺口判定互补（前者查引用存在、后者查分数是否够）；
+  - **行前前置校验（决策 3/14）**：读当日 Day 的 `- 前置：` 声明，对照能力矩阵逐项判定（判定规则见 `resources/data-formats.md` §3：知识点水平分 ≥ 3 具备、能力 `未具备` 即缺口）：
+    - **严重缺口**：能力 `未具备` 或 前置知识点 ≤ 1.5 分 → **暂停当日任务**，回计划插入补前置天（走 `resources/plan-contract.md` 的计划修订流程：插入只排缺口知识点/能力的补前置天、来源照常检索、请学习者确认后落盘），本日改执行补前置天内容（或改期）；
+    - **轻度缺口**：1.5 < 分 < 3 → 当日先"**补讲前置导入段**"（10 分钟内概述缺口知识点/能力，给出来源）再进正题，当日总结中注明（验收时记录，见 `resources/acceptance-contract.md`）；
+    - 无前置或全部具备 → 正常进入复习检查。
   - 其余 → 复习考察 → 热场 → 网页 → 执行。
 - 当日任务定位与 `resources/page-contract.md` §2 的 `day` 一致（`Day N` / 编号 / 日期均可），以 `plan.md` 为准。
 
@@ -81,7 +86,7 @@
 
 1. **检索当日知识点**：对当日任务「知识点」调 `scripts/retrieve.py`，本地相关命中不足时允许一次 `web_search` 补充（阈值与并入规则见 `resources/retrieval-contract.md`）。
 2. **提炼 knowledge**：把检索结果提炼为「概念 + 示例」条目（`page.py` 的 `knowledge` 输入，契约见 `resources/page-contract.md` §2）；不提炼时脚本会读当日任务来源正文兜底。
-3. **生成网页**：调 `scripts/page.py`，输入 `plan_path` + `day`（当日任务标识）+ （可选）`knowledge` → 输出 HTML 到系统临时目录（可 `output_dir` 覆盖）；拿到 `html_path`。
+3. **生成网页**：调 `scripts/page.py`，输入 `plan_path=.python-coach/state/plan.md` + `day`（当日任务标识）+ （可选）`knowledge` → 输出 HTML 到系统临时目录（可 `output_dir` 覆盖）；拿到 `html_path`。脚本 in/out JSON 放 `.python-coach/tmp/`。
 4. **呈现**：把网页交付给学习者——说明可双击离线打开、可勾选目标，当日执行用它做参照；如环境支持，直接打开/展示路径。
 5. **不删除**：网页在验收完成、当日总结写入后由 ticket 12 流程提出删除（本流程只生成）。
 
@@ -101,15 +106,11 @@
 - **引用规范**：考察题、当日知识、执行辅助的关键事实都必须有依据（快查文档/来源）；无依据不出题、不讲。
 - **范围约束**：执行只做当日任务 + `scope_covered`；`scope_excluded` 不教。
 - **防空转**：到期知识点逐题有限（有穷列表）；热场 2 题封顶；会话步骤上限 30（护栏）。
+- **前置校验（决策 3/14）**：行前先核当日 `- 前置：`（判定规则见 `resources/data-formats.md` §3）；严重缺口暂停回计划、轻度缺口补讲导入段——**不跳过校验直接执行**（防"悬空计划"）；能力行不做复习考察（无水平分，见 `resources/data-formats.md` §6）。
+- **过程文件清理**（目录与时机见 `resources/data-formats.md`「工作区目录结构」）：本流程产生的脚本 in/out JSON（`due`/`record`/`review`/`retrieve`/`page`）放 `.python-coach/tmp/`，**当日验收完成即清**；当日执行网页 HTML 由 ticket 12 验收完成后经学习者确认删除。会话结束时 `.python-coach/tmp/` 全清（当日网页除外）。清理为 agent 内部动作，不需逐条向学习者确认。
 
 ## 9. 验证方式
 
-- 本流程为对话式流程，按 spec「测试 seam」**不设自动化 seam**，构建后通过**实际演练验证**。演练产物存于 `.scratch/python-coach/rehearsal-11/`。
-- **演练记录（2026-08-25，ticket 11 构建时，Day 5 早晨场景）**：前置数据（`rehearsal-11/data/`）模拟「Day 1–4 已完成、其后各课知识点已按 ticket 13 纳入调度表」的 Day 5 晨间状态——调度表 6 知识点（变量/条件/函数/Series/DataFrame/数据读取与筛选，各带档位），当日 Day 5 = 08-25。
-  - **复习检查**：`schedule.py op=due`（today=2026-08-25）→ 到期 `变量与数据类型`（2.5/5，3 天档，到期 08-25）与 `数据读取与筛选`（3/5，1 天档，到期 08-25），其余 4 个非到期 → 展示概览后逐一考察（**转写摘录**见 `rehearsal-log.md`）。
-  - **一问一答考察**：变量题（依据 `review/01-variables-conditions.md`）学习者答对 → `pass`；读取筛选题（依据 `review/04-reading-filtering.md`）学习者答错 → `fail`。汇总考察结果单，学习者确认后成对写回：`schedule.py record`（两个知识点）+ `profile.py review`（两个知识点），脚本均退出码 0 → 调度表推进（变量 3.0/7 天/下次 09-01；读取筛选 2.5/重置 1 天/下次 08-26），矩阵同步（变量 3.0、读取筛选 2.5）。
-  - **随机抽查热场**：候选 = 非到期历史 4 个（条件/函数/Series/DataFrame），随机抽 2 个（函数、pandas.Series）→ 快问快答回顾，不计分不回写（**转写摘录**见 `rehearsal-log.md`）。
-  - **当日网页生成**：检索层检索「Excel 读写」→ 提炼 knowledge → `page.py` 生成 `day-5-2026-08-25.html`（四区块齐全：知识/链路/目标含勾选/来源链接），输出 JSON 字段正确。
-  - **执行辅助**：按范围声明引导 Day 5 实操（read_excel/to_excel/sheet 参数），给出来源链接；当日不动 `progress.md`、不生成复习快查（留给 ticket 12/13）。
-  - 产物：`data/`（before 副本 `data-before/` + 演练后的工作数据）、`due.out.json`、`record-*.in/out.json`、`review-*.in/out.json`、`page-out/`（HTML + json）、`rehearsal-log.md`（完整转写与脚本记录）。
-- 写回路径的自动化测试另由 `scripts/test_schedule.py`（ticket 03）与 `scripts/test_profile.py`（ticket 05）兜底；网页生成由 `scripts/test_page.py`（ticket 06）兜底。
+- 本流程为对话式流程，按 spec「测试 seam」**不设自动化 seam**，构建后经实际演练验证（2026-08-25，Day 5 早晨场景：复习检查到期 2 知识点一过一挂并成对写回 → 随机抽查 2 个历史知识点热场不计分 → 当日网页生成四区块齐全）。旧演练实体产物已随版本清理，步骤摘要如上。
+- **行前前置校验（2026-08 修订批次 2 新增）**：读当日 `- 前置：` 对照矩阵分级处置——严重缺口（能力未具备 / 前置 ≤ 1.5 分）暂停回计划插入补前置天、轻度缺口（1.5<分<3）当日补讲导入段并在总结注明。
+- 写回路径的自动化测试另由 `scripts/test_schedule.py`（ticket 03）与 `scripts/test_profile.py`（ticket 05 + 批次 2）兜底；网页生成由 `scripts/test_page.py`（ticket 06）兜底；行前引用自检由 `scripts/test_check.py`（批次 3）兜底（`resources/check-contract.md` §7）。

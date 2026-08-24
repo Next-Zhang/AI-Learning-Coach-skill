@@ -83,3 +83,7 @@ python scripts/test_completion.py        # 全部测试（Python unittest）
 1. 验收对话：学习者提交证据 → agent 逐项核查给结论（完成/部分完成/未完成 + 理由）→ 与学习者各自打分 → 调本脚本合成完成度分。
 2. 输入 `agent_score` / `self_score` / `difficulty` → 拿到 `score` 与 `score_display`，展示给学习者确认（混合式验收：确认权在学习者）。
 3. 确认后，验收流程把 `score_display`、`synthesis`、`difficulty` 写入当日总结（`progress.md`，ticket 12）。
+
+## 8. 过程文件清理
+
+本脚本的 in/out JSON 放 `.python-coach/tmp/`，**当日验收完成即清**（目录与时机见 `resources/data-formats.md`「工作区目录结构」）。清理为 agent 内部动作，不需逐条向学习者确认。

@@ -1,0 +1,6 @@
+{
+  "date": "2026-08-22",
+  "plan_path": "../check/plan-good.md",
+  "profile_path": "../check/profile-good.md",
+  "acceptance_topics": ["pandas.Series"]
+}

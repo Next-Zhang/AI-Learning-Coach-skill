@@ -15,6 +15,11 @@
   （护栏 approval）；schedule_add 只是输出建议，实际写调度表由 schedule.py 完成。
 - query：只读查阅——按知识点关键词和/或日期检索 `review/` 下快查文档，支持按
   知识点（topics / 行文本）、按日期（frontmatter date）直接定位；不写任何文件。
+- append：向**当日课程的**快查文档追加一行新知识点（批次 4 显式新增通道的
+  三同步之一）——新知识点无独立课程归属，挂当日课：在 `review/NN-主题.md`
+  末尾追加 `- **topic**：…` 行，并把 topic 并入 frontmatter topics（供按知识点
+  查阅）。不写调度表、不写画像（分别由 schedule.py op=add 与 profile.py
+  add_new 通道完成）。
 
 与 progress.md 的职责分离（spec「每日闭环」）：progress.md = 每日总结叙事（由
 ticket 12 追加）；review/ = 每节课的知识沉淀（用户可读、按知识点/日期查阅）；
@@ -25,6 +30,8 @@ import json
 import math
 import re
 import sys
+
+sys.dont_write_bytecode = True  # 运行期不写 __pycache__（等价 PYTHONDONTWRITEBYTECODE=1）
 from datetime import date, datetime
 from pathlib import Path
 
@@ -220,6 +227,40 @@ def _clamp_mastery(value):
     return min(MASTERY_MAX, max(MASTERY_MIN, m))
 
 
+def _normalize_point(item, label):
+    """归一化一个知识点输入 → {topic, concept, example, pitfall, source, mastery}。
+
+    label 用于报错定位（generate 为 `points[i]`，append 为 `point`）。
+    校验与 generate 的 points 项一致：topic/concept/source 必填、source 不能含
+    | 或换行（护栏「引用规范」）；example/pitfall 可选；mastery 规范到 0.5 档
+    （默认 2.0，只进 schedule_add，不渲染进正文）。
+    """
+    if not isinstance(item, dict):
+        raise ValueError(f"{label} 必须是对象")
+    topic = _require_topic(item.get("topic"))
+    concept = _require_str(item, "concept", "concept")
+    source = _require_str(item, "source", "source")
+    if "|" in source or "\n" in source:
+        raise ValueError(f"{label}.source 不能包含 | 或换行")
+    example = item.get("example")
+    example = str(example).strip() if example is not None else ""
+    pitfall = item.get("pitfall")
+    pitfall = str(pitfall).strip() if pitfall is not None else ""
+    mastery = (
+        _clamp_mastery(item.get("mastery"))
+        if item.get("mastery") is not None
+        else DEFAULT_MASTERY
+    )
+    return {
+        "topic": topic,
+        "concept": concept,
+        "example": example,
+        "pitfall": pitfall,
+        "source": source,
+        "mastery": mastery,
+    }
+
+
 def _parse_date(value):
     """date 字段：缺省取系统日期；显式值必须为 YYYY-MM-DD（自动规范补零）。"""
     if value is None:
@@ -278,33 +319,9 @@ def _run_generate(req, input_path):
     points = []
     schedule_add = []
     for idx, item in enumerate(points_raw):
-        if not isinstance(item, dict):
-            raise ValueError(f"points[{idx}] 必须是对象")
-        topic = _require_topic(item.get("topic"))
-        concept = _require_str(item, "concept", "concept")
-        source = _require_str(item, "source", "source")
-        if "|" in source or "\n" in source:
-            raise ValueError(f"points[{idx}].source 不能包含 | 或换行")
-        example = item.get("example")
-        example = str(example).strip() if example is not None else ""
-        pitfall = item.get("pitfall")
-        pitfall = str(pitfall).strip() if pitfall is not None else ""
-        mastery = (
-            _clamp_mastery(item.get("mastery"))
-            if item.get("mastery") is not None
-            else DEFAULT_MASTERY
-        )
-        points.append(
-            {
-                "topic": topic,
-                "concept": concept,
-                "example": example,
-                "pitfall": pitfall,
-                "source": source,
-                "mastery": mastery,
-            }
-        )
-        schedule_add.append({"topic": topic, "mastery": mastery})
+        point = _normalize_point(item, f"points[{idx}]")
+        points.append(point)
+        schedule_add.append({"topic": point["topic"], "mastery": point["mastery"]})
 
     review_dir.mkdir(parents=True, exist_ok=True)
     filename = f"{course:02d}-{slugify(title)}.md"
@@ -402,11 +419,104 @@ def _run_query(req, input_path):
     }
 
 
+# --- append：当日课新增行（批次 4 显式新增通道的三同步之一） ---
+
+
+def _find_course_doc(review_dir, course):
+    """定位课程快查文档 `NN-*.md`；找不到或存在多份时报错。"""
+    label = f"{course:02d}"
+    hits = sorted(review_dir.glob(f"{label}-*.md")) if review_dir.exists() else []
+    if not hits:
+        raise ValueError(
+            f"快查文档不存在（课程 {label} 尚未 generate）：{label}-*.md"
+        )
+    if len(hits) > 1:
+        raise ValueError(
+            f"课程 {label} 存在多份快查文档，无法确定追加目标："
+            + "、".join(p.name for p in hits)
+        )
+    return hits[0]
+
+
+def _run_append(req, input_path):
+    """op=append：向当日课程的快查文档追加一行新知识点（批次 4）。
+
+    输入字段：review_path（可选，默认 "review"）、course（必填，1–99）、
+    topic/concept/source（必填，校验规则同 generate 的 points 项）、
+    example?/pitfall?。新知识点无独立课程归属，挂当日课：在文档末尾追加
+    `- **topic**：…` 行，并把 topic 并入 frontmatter topics（不在则加）。
+    输出：filename/file_path + topics（更新后）+ added_topic + line_count + point。
+    本操作不改调度表与画像（三同步由 schedule.py op=add 与 profile.py add_new
+    通道分别完成）；写盘属持久层修改，执行前 agent 须先经学习者确认。
+    """
+    review_dir = _resolve_path(req, input_path, "review_path", "review")
+    raw_course = req.get("course")
+    try:
+        course = int(raw_course)
+    except (TypeError, ValueError):
+        raise ValueError(f"course 必须是数字：{raw_course!r}")
+    if not 1 <= course <= 99:
+        raise ValueError("course 必须在 1–99 之间（文件名两位编号）")
+    point = _normalize_point(req, "point")
+    topic = point["topic"]
+
+    path = _find_course_doc(review_dir, course)
+    text = path.read_text(encoding="utf-8")
+    fm, body = parse_frontmatter(text)
+    if "course" not in fm:
+        raise ValueError(
+            f"快查文档缺少 frontmatter（无法并入 topics）：{path.name}"
+        )
+    existing = parse_review_doc(text, path.name)
+    if any(p["topic"] == topic for p in existing["points"]):
+        raise ValueError(f"知识点已在当日快查文档中：{topic}（{path.name}）")
+
+    topics = list(existing["topics"])
+    if topic not in topics:
+        topics.append(topic)
+    course_label = f"{course:02d}"
+    rendered = (
+        "---\n"
+        f"course: {course_label}\n"
+        f"date: {str(fm.get('date') or '').strip()}\n"
+        f"topics: [{', '.join(topics)}]\n"
+        "---\n"
+    )
+    # parse_frontmatter 会吃掉 frontmatter 后的空行（`\s*\n?`），重建时补回，
+    # 保持与 generate 输出一致的空行格式（`---\n\n# NN — …`）
+    if not body.startswith("\n"):
+        rendered += "\n"
+    rendered += body
+    if rendered and not rendered.endswith("\n"):
+        rendered += "\n"
+    rendered += _point_text(point) + "\n"
+    path.write_text(rendered, encoding="utf-8")
+
+    return {
+        "op": "append",
+        "review_path": str(review_dir.resolve()),
+        "course": course,
+        "course_label": course_label,
+        "filename": path.name,
+        "file_path": str(path.resolve()),
+        "added_topic": topic,
+        "topics": topics,
+        "line_count": len(existing["points"]) + 1,
+        "point": {
+            "topic": point["topic"],
+            "concept": point["concept"],
+            "example": point["example"],
+            "pitfall": point["pitfall"],
+            "source": point["source"],
+        },
+    }
+
+
 # --- 文件契约入口 ---
 
 
 def run(input_path, output_path):
-    """文件契约入口：读输入 JSON → generate/query → 写输出 JSON。"""
+    """文件契约入口：读输入 JSON → generate/query/append → 写输出 JSON。"""
     input_path = Path(input_path)
     req = json.loads(input_path.read_text(encoding="utf-8"))
     if not isinstance(req, dict):
@@ -416,8 +526,10 @@ def run(input_path, output_path):
         result = _run_generate(req, input_path)
     elif op == "query":
         result = _run_query(req, input_path)
+    elif op == "append":
+        result = _run_append(req, input_path)
     else:
-        raise ValueError('输入缺少 op 字段（"generate" / "query"）')
+        raise ValueError('输入缺少 op 字段（"generate" / "query" / "append"）')
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)

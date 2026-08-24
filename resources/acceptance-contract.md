@@ -17,7 +17,7 @@
 ## 2. 起点与前置
 
 - **前置**：本日会话已走完「会话开始」（ticket 11）与当日执行辅助，当日任务收尾（ticket 11 `session-start-contract.md` §7 收尾）→ 进入本流程；`plan.md`（`status: active`，含当日 Day 区块）与当日执行网页已在本会话生成。
-- **读取**（进入时只读）：`plan.md` 当日 Day 区块（主题 / 目标清单 / 知识点 / 来源）、本会话生成的当日网页路径（`page.py` 输出 JSON 的 `html_path`，会话内已知）、`profile.md` 能力矩阵（写回基准，`updated` 会在写回时更新）。
+- **读取**（进入时只读，六件套均在 `.python-coach/state/`，路径约定见 `resources/data-formats.md` 开头「工作区目录结构」）：`.python-coach/state/plan.md` 当日 Day 区块（主题 / 前置 / 目标清单 / 知识点 / 来源）、本会话生成的当日网页路径（`page.py` 输出 JSON 的 `html_path`，会话内已知）、`.python-coach/state/profile.md` 能力矩阵（写回基准，`updated` 会在写回时更新）。
 - **开场示例**："今天的内容到这儿了。开始验收——把你今天的成果贴给我：写过的代码、跑出来的结果、或者你的回答。我对照今天的 3 项目标逐条核对，然后我们各自打分，合成今天的完成度。"
 - **分支**（核查中发现异常时）：证据不足以判断某项 → 请学习者补充（贴关键代码/运行输出截图文字）；当日任务明显没做 → 如实记「未完成」，不催不逼，验收照常走（分数低、总结如实记录），任务顺延的沟通放在总结之后。
 
@@ -73,10 +73,20 @@
 
 ## 6. 验收结果写回（profile.py op=acceptance）
 
-1. **写回清单**：当日任务「知识点」字段的**每个**知识点各写回一次（同完成度、同难度；当日多知识点共用当日一个完成度分）。展示清单：知识点 → 当前水平分 → 将如何变化（完成度 ≥ 4 → +0.5，上限 5；< 4 → 不变，仅记日志）→ 难度反馈入增量日志。
-2. **确认后逐一调用** `scripts/profile.py`，`op=acceptance`，`topic`（当日知识点）、`score`（合成完成度分）、`difficulty`（§4 采集值，可选）、`source`（建议 `「验收 Day N」`，契约 `resources/profile-contract.md` §2）→ 输出 `old_score` / `new_score` / `delta` / `log_entry`。
-3. **汇报**：汇总写回结果（如"Excel 读写 3 → 3.5 +0.5，难度「太难」已记入画像，不影响本次完成度"）。能力矩阵是权威值（`resources/data-formats.md` §3）。
-4. **approval 护栏**：本步原地改写 `profile.md`（矩阵行 + 增量记录 + frontmatter `updated`），属持久层修改，**先展示写回清单、经学习者确认后执行**；同一验收批的多个知识点一次批量确认，不逐条打扰。
+1. **写回前自检（批次 3）**：调 `scripts/check.py`（`day`=当日、`acceptance_topics`=写回清单知识点、`plan_path`/`profile_path` 显式传 `.python-coach/state/…`，in/out JSON 放 `.python-coach/tmp/`，契约见 `resources/check-contract.md`）核对写回 topic 与当日计划「知识点」口径一致——**error 级 → 修正写回清单后再写回**（计划外 topic 不得静默写进矩阵）；warning（清单未覆盖某当日知识点）→ 有意遗漏可忽略，否则补上。若某写回 topic 不仅不在当日计划、**也不在能力矩阵**（学习中冒出的新知识点）→ 不硬性剔除，改走 §6.6 显式新增通道（学习者确认后写回）。
+2. **写回清单**：当日任务「知识点」字段的**每个**知识点各写回一次（同完成度、同难度；当日多知识点共用当日一个完成度分）。展示清单：知识点 → 当前水平分 → 将如何变化（完成度 ≥ 4 → +0.5，上限 5；< 4 → 不变，仅记日志）→ 难度反馈入增量日志。
+3. **确认后逐一调用** `scripts/profile.py`，`op=acceptance`，`topic`（当日知识点）、`score`（合成完成度分）、`difficulty`（§4 采集值，可选）、`source`（建议 `「验收 Day N」`，契约 `resources/profile-contract.md` §2）→ 输出 `old_score` / `new_score` / `delta` / `log_entry`。
+4. **汇报**：汇总写回结果（如"Excel 读写 3 → 3.5 +0.5，难度「太难」已记入画像，不影响本次完成度"）。能力矩阵是权威值（`resources/data-formats.md` §3）。
+5. **approval 护栏**：本步原地改写 `profile.md`（矩阵行 + 增量记录 + frontmatter `updated`），属持久层修改，**先展示写回清单、经学习者确认后执行**；同一验收批的多个知识点一次批量确认，不逐条打扰。
+6. **矩阵外知识点的显式新增通道（批次 4，决策 5）**：核对中发现某 topic **不在能力矩阵**（`scripts/profile.py` 默认报错）——这是「学习中冒出新知识点」的信号，**暂停写回、不报错退出**，改走显式通道：
+   1. **说明与询问**：向学习者展示："学习中出现了新知识点 `X`，将加入能力矩阵并纳入复习调度，是否确认？"（来源不编造，说清它是在哪条证据/哪个目标下冒出来的）；
+   2. **学习者确认 → 三同步**：
+      - `scripts/profile.py` `op=acceptance`，`add_new: true`（可选 `type`/`domain`/`subdomain`，能力行另需 `pre_status`）→ 新建矩阵行（知识点行初值 = 完成度；来源建议 `「验收新增 Day N」`，契约 `resources/profile-contract.md` §2/§4）；
+      - `scripts/schedule.py` `op=add` 纳入调度表（掌握度取矩阵新行水平分，契约 `resources/schedule-contract.md`）；
+      - `scripts/review.py` `op=append` 把该知识点追加到**当日课程的** `review/NN-主题.md`（新知识点无独立课程归属，挂当日课、来源标注，契约 `resources/review-contract.md` §5）；
+      - 追加一行到 `.python-coach/state/decision-log.md`（决策 15）：`2026-08-25 | 矩阵新增知识点 | pandas.merge（验收新增 Day 5，学习者确认）`；
+   3. **学习者拒绝** → 维持原样：该 topic **不写回矩阵**（跳过），写回清单其余项照常执行，并把拒绝记入 decision-log（`矩阵新增被拒`）；
+   4. 通道写回的行带 `added` 标记；`scripts/check.py` 对增量记录中「新增知识点/新增能力」行**跳过口径核对**（学习者确认的例外，契约 `resources/check-contract.md` §4），不误报「写回 topic 不在当日计划」。
 
 ## 7. 当日总结写入 progress.md
 
@@ -88,15 +98,18 @@
    - 完成度：4.5/5（0.7 × 4 + 0.3 × 5 ≈ 4.5）
    - 难度反馈：太难
    - 当日总结：学会了 read_excel / to_excel 与 sheet_name 指定工作表，完成「读入 → 筛选 → 写出」小程序；卡点：openpyxl 缺失（环境坑）与链式索引赋值（已用 loc 修正）。总评：目标 3/3 达成……
-   - 证据摘要：read_excel('报表.xlsx') + sheet_name='明细' 成功读出；df.loc[df['金额'] > 100, '金额'] = 0 做筛选；to_excel('结果.xlsx') 写出文件确认
+   - 证据：
+     - [读懂 Excel 读取] read_excel('报表.xlsx') + sheet_name='明细' 成功读出 → pandas.DataFrame
+     - [完成列筛选] df.loc[df['金额'] > 100, '金额'] = 0 筛选成功 → pandas.DataFrame
+     - [完成写出] to_excel('结果.xlsx') 写出文件确认 → pandas.DataFrame
    ```
 
    - 「完成度」写 `score_display`，可附合成算式（照抄脚本 `synthesis`）；
    - 「难度反馈」独立行，`太难 | 刚好 | 太简单`；
    - 「当日总结」由 agent 依据 §3 结论与逐条判定撰写（学到什么、卡点与解决、下一步关注点——基于证据与当日内容，关键事实引用当日来源，**不新增无依据断言**）；
-   - 「证据摘要」只留要点与位置，不贴整段代码（正文可引述关键几行，spec 与 `data-formats.md` §2 约定）。
-2. **展示 → 确认**：把写好的总结块展示给学习者，确认后**追加**到 `progress.md` 文件末尾（最新一天在最后）并更新 frontmatter `updated` = 今天。**追加语义**：只尾加，不改既往日期的任何内容。
-3. **approval 护栏**：`progress.md` 属持久层六件套，写前先经学习者确认（护栏 approval）；**不确认不写**，此时画像写回与进度写入都不发生（保持验收前状态）。
+   - 「证据」条目式结构化（批次 3，决策 16）：`- 证据：` 后跟条目子列表，每条 `- [<目标/动作>] <证据描述> → <知识点>`；`[<目标/动作>]` 对应当日目标清单条目、`→ <知识点>` 与当日计划「知识点」口径一致（`scripts/check.py` 校验，契约见 `resources/check-contract.md`）；证据只留要点与位置，不贴整段代码（正文可引述关键几行，spec 与 `data-formats.md` §2 约定）。
+2. **展示 → 确认**：把写好的总结块展示给学习者，确认后**追加**到 `.python-coach/state/progress.md` 文件末尾（最新一天在最后）并更新 frontmatter `updated` = 今天。**追加语义**：只尾加，不改既往日期的任何内容。
+3. **approval 护栏**：`.python-coach/state/progress.md` 属持久层六件套，写前先经学习者确认（护栏 approval）；**不确认不写**，此时画像写回与进度写入都不发生（保持验收前状态）。
 
 ## 8. 网页清除
 
@@ -108,18 +121,18 @@
 
 ## 9. 边界与护栏
 
-- **ticket 分工**：不生成复习快查文档、不更新调度表 `add`/`record`（ticket 13）；不做会话开头的事（复习考察、网页生成，ticket 11）；`progress.md` 只写当日总结块、不重构历史。
+- **ticket 分工**：不主动生成复习快查文档、不主动更新调度表 `add`/`record`（ticket 13）——**矩阵外新增通道（§6.6）除外**：经学习者确认后三同步写调度表与当日课快查文档；不做会话开头的事（复习考察、网页生成，ticket 11）；`progress.md` 只写当日总结块、不重构历史。
 - **approval**（全部写入前确认）：
-  - `profile.md` 写回（§6）：展示写回清单、批量一次确认；
-  - `progress.md` 追加（§7）：展示总结块、确认后写；
+  - `.python-coach/state/profile.md` 写回（§6）：展示写回清单、批量一次确认；
+  - `.python-coach/state/progress.md` 追加（§7）：展示总结块、确认后写；
   - 网页删除（§8）：显式提出、明确同意后删。
   - **任何一步未确认 → 不执行**；学习者中止 → 全部保持验收前状态、下个会话按本契约重走。
 - **完成度与难度分离**：难度反馈独立采集、独立记录，不参与完成度分（`completion.py` 与 `profile.py` 语义一致）。
 - **引用规范**：核查理由、总结内容基于当日证据与当日来源；关键事实引用来源，不编造、不把新知识点断言写进总结。
 - **防空转**：证据补证最多 1 次追问；质疑复核轮次上限 3 轮（超限以学习者最终确认意见为准并记录分歧）；总结起草一次过、只按学习者意见小改；整体会话遵守 30 步上限（护栏「运行参数上限」）。
+- **过程文件清理**（目录与时机见 `resources/data-formats.md`「工作区目录结构」）：本流程产生的脚本 in/out JSON（`completion.py` / `profile.py op=acceptance` / `review.py`）与总结草稿放 `.python-coach/tmp/`，**当日验收完成即清**；当日网页 HTML 由 §8 学习者确认后删除。清理为 agent 内部动作，不需逐条向学习者确认（网页删除除外）。
 
 ## 10. 验证方式
 
-- 本流程为对话式流程，按 spec「测试 seam」**不设自动化 seam**，构建后通过**实际演练验证**。演练产物存于 `.scratch/python-coach/rehearsal-12/`。
-- **演练记录（2026-08-25，ticket 12 构建时，Day 5 晚间场景）**：前置数据延续 rehearsal-11 的 Day 5 早晨产物（`data/` 工作数据 + 当日网页），并补 Day 1–4 进度（`progress.md`）；走通「证据提交 → 逐项目标核查（3/3 达成）→ 结论『完成』→ agent 4 / 自评 5 → `completion.py` 合成 4.5/5（0.7×4+0.3×5≈4.5）→ 学习者就评分与难度语义提出质疑 → agent 复核维持（难度不参与完成度、loc 纠错计入评分理由）→ 确认 4.5/5 → 难度采集『太难』→ 最终验收单确认 → `profile.py op=acceptance`（Excel 读写 3→3.5）→ 总结块确认 → 追加 `progress.md` → 提出删除当日网页 → 学习者确认 → 删除」。详细转写与脚本记录见 `rehearsal-12/rehearsal-log.md`。
-- 量化逻辑的自动化测试另由 `scripts/test_completion.py`（ticket 04）与 `scripts/test_profile.py`（ticket 05）兜底；`progress.md` 格式自检由本演练 + `resources/data-formats.md` §2 保证。
+- 本流程为对话式流程，按 spec「测试 seam」**不设自动化 seam**，构建后经实际演练验证（2026-08-25，Day 5 晚间场景：证据提交 → 逐目标核查 3/3 → `completion.py` 合成 4.5/5 + 难度「太难」→ 质疑复核 → 确认 → `profile.py op=acceptance` 3→3.5 → 总结入 `progress.md` → 提出并确认删除当日网页）。旧演练实体产物已随版本清理，步骤摘要如上。
+- 量化逻辑的自动化测试另由 `scripts/test_completion.py`（ticket 04）与 `scripts/test_profile.py`（ticket 05）兜底；`progress.md` 格式自检由本演练 + `resources/data-formats.md` §2 保证；证据条目口径与写回 topic 一致性由 `scripts/test_check.py`（批次 3）兜底（`resources/check-contract.md` §7）。

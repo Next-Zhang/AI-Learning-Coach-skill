@@ -35,7 +35,7 @@ python scripts/retrieve.py <input.json> <output.json>
 | 字段 | 必填 | 说明 |
 | --- | --- | --- |
 | `query` | 是 | 查询字符串；空/缺失报错（退出码 1）。 |
-| `sources_dir` | 否 | 资料库目录，默认 `sources`。**相对路径以输入文件所在目录为基准**解析（写在工作目录的输入文件配 `"sources_dir": "sources"` 即可）。 |
+| `sources_dir` | 否 | 资料库目录，默认 `sources`。**相对路径以输入文件所在目录为基准**解析（写在工作目录的输入文件配 `"sources_dir": "sources"` 即可）。使用阶段 agent 一律**显式传** `.python-coach/state/sources`（六件套路径约定见 `resources/data-formats.md` 开头「工作区目录结构」）。 |
 | `limit` | 否 | 结果数上限，默认 10。 |
 | `web_results` | 否 | agent 侧 `web_search`/`web_fetch` 检索到的补充结果数组（见 §5）。 |
 
@@ -117,3 +117,7 @@ python scripts/test_retrieve.py        # 全部测试（Python unittest）
 ## 7. 升级路径（ADR-0002）
 
 替换 `search_sources` 实现为向量检索即可。升级时**稳定不变**的部分：输入文件格式、四必需字段（标题/来源/摘要/链接）、`origin`、frontmatter 五字段、web 合并去重流程与测试契约；`score`/`matched_terms` 为 v0 关键词产物，升级时可替换或移除（消费方不得依赖，见 §3）。`sources/` 的 frontmatter 字段即向量库切块元数据，数据零迁移。
+
+## 8. 过程文件清理
+
+本脚本的 in/out JSON 放 `.python-coach/tmp/`，**当日使用完成即清**（目录与时机见 `resources/data-formats.md`「工作区目录结构」）。清理为 agent 内部动作，不需逐条向学习者确认。

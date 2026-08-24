@@ -32,7 +32,7 @@ python scripts/schedule.py <input.json> <output.json>
 | --- | --- | --- | --- |
 | `op` | 全部 | 是 | `"due"`（查到期）/ `"add"`（新增知识点）/ `"record"`（记录考察结果）。 |
 | `today` | 全部 | 否 | 基准日期 `YYYY-MM-DD`，默认系统日期。用于计算下次复习日与判断到期。 |
-| `schedule_path` | 全部 | 否 | 调度表路径，默认 `review/schedule.md`。**相对路径以输入文件所在目录为基准**解析（写在工作目录的输入文件配 `"schedule_path": "review/schedule.md"` 即可）。 |
+| `schedule_path` | 全部 | 否 | 调度表路径，默认 `review/schedule.md`。**相对路径以输入文件所在目录为基准**解析（写在工作目录的输入文件配 `"schedule_path": "review/schedule.md"` 即可）。使用阶段 agent 一律**显式传** `.python-coach/state/review/schedule.md`（六件套路径约定见 `resources/data-formats.md` 开头「工作区目录结构」）。 |
 | `topic` | add, record | 是 | 知识点名。不能为空、不能含 `\|` 或换行（表格格式约束）。 |
 | `mastery` | add | 否 | 初始掌握度 1–5，默认 2.0；超出范围自动截断。 |
 | `result` | record | 是 | 考察结果：`"pass"`（通过）或 `"fail"`（未通过）。 |
@@ -115,3 +115,7 @@ python scripts/test_schedule.py        # 全部测试（Python unittest）
 1. **会话开头查到期**：`op=due`，`today=今天` → 拿到到期知识点列表，逐一考察。
 2. **考察后记录**：`op=record`，`topic=…`，`result=pass|fail` → 调度表推进、下次复习日更新。
 3. **课后纳入新知识点**：`op=add`，`topic=…`，`mastery=<能力矩阵当前值>` → 明天起按 1 天间隔复习。
+
+## 8. 过程文件清理
+
+本脚本的 in/out JSON 放 `.python-coach/tmp/`，**当日验收完成即清**（目录与时机见 `resources/data-formats.md`「工作区目录结构」）。清理为 agent 内部动作，不需逐条向学习者确认。
