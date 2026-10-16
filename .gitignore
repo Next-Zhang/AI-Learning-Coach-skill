@@ -219,3 +219,6 @@ __marimo__/
 
 # python-coach scripts：测试运行生成的输出目录
 scripts/testdata/_out/
+
+# python-coach：本地学习状态与会话过程文件不进入技能源码仓库
+/.python-coach/

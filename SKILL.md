@@ -98,7 +98,7 @@ disable-model-invocation: true
 
 ## 数据文件
 
-- **正式数据目录**：六件套持久层数据格式约定（含 frontmatter 元数据规范）见 [`resources/data-formats.md`](resources/data-formats.md)（含「工作区目录结构」地图），写任何数据文件前先读它。六件套正式文件一律在 **`.python-coach/state/`**，使用阶段**显式传** `.python-coach/state/…` 路径（脚本默认路径值不变）；过程文件（初始化 JSON、草稿/修订记录、评审出入包、自检副本、脚本 in/out JSON）放 **`.python-coach/tmp/`**，**所属阶段完成即清**——清理为 agent 内部动作，不需逐条向学习者确认（**当日执行网页删除除外**，需学习者显式批准）。
+- **正式数据目录**：六件套持久层数据格式约定（含 frontmatter 元数据规范）见 [`resources/data-formats.md`](resources/data-formats.md)（含「工作区目录结构」地图），写任何数据文件前先读它。六件套正式文件一律在 **`.python-coach/state/`**。使用阶段显式指定数据路径：JSON 内相对路径以**输入 JSON 所在目录**为基准；输入位于 `.python-coach/tmp/` 时传 `../state/…`，或传绝对路径（脚本默认路径值不变）。过程文件（初始化 JSON、草稿/修订记录、评审出入包、自检副本、脚本 in/out JSON）放 **`.python-coach/tmp/`**，**所属阶段完成即清**——清理为 agent 内部动作，不需逐条向学习者确认（**当日执行网页删除除外**，需学习者显式批准）。
 - **初始化**：首次起步按 [`templates/`](templates/) 初始化六件套到 `.python-coach/state/`（模板路径不变），之后全程读写 `.python-coach/state/`。
 - 来源检索用检索层脚本 [`scripts/retrieve.py`](scripts/retrieve.py)：输入查询 → 输出资料列表（标题/来源/摘要/链接），契约见 [`resources/retrieval-contract.md`](resources/retrieval-contract.md)；本地 `.python-coach/state/sources/` 结果不足时再用 `web_search` 补充并并入 `web_results` 字段。
 

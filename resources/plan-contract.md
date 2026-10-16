@@ -119,9 +119,9 @@
 ## 6. 落盘 plan.md（status: active）
 
 1. **展示终稿**：计划全文（天数/主题序列/每日明细）+ 三份评审结论摘要（每份「通过」+ 一到两句），请学习者确认后写入。
-2. **写入** `.python-coach/state/plan.md`：以草案为基础，frontmatter `status: active`、`updated` = 今天，正文保留全部 Day 区块（字段与解析规则以 `resources/data-formats.md` §1 与 `resources/page-contract.md` §5 为唯一权威，本契约不重复）。
-3. **引用自检（批次 3）**：调用 `scripts/check.py`（`plan_path`/`profile_path` 显式传 `.python-coach/state/…`，in/out JSON 放 `.python-coach/tmp/`，契约见 `resources/check-contract.md`）核对计划引用一致性——Day「知识点」「前置」是否都在能力矩阵中、知识点是否误引能力行、结构字段是否齐备；**error 级问题 → 不落盘**，修订后重跑至无 error；warning 级问题 → 可落盘但修订说明里记录。
-4. **格式自检**：调用 `scripts/page.py` 以 `.python-coach/state/plan.md` 为 `plan_path` 跑一次（任取一日）确认可正常解析（拿到当日任务各字段、HTML 生成成功），自检副本（HTML/JSON）放 `.python-coach/tmp/`、自检完成即清；脚本只读不写持久层。ticket 11 起每日网页生成依赖此格式。
+2. **准备待检终稿**：将包含全部 Day 区块的终稿暂存于 `.python-coach/tmp/`，保持正式 `plan.md` 原样。待检副本的本地来源引用须指向正式 `state/sources/` 对应文件（使用绝对路径或按副本位置调整的相对路径），确保自检读取同一份资料；正式计划仍按 `state/plan.md` 所在目录使用 `sources/…` 引用。
+3. **引用自检（批次 3）**：调用 `scripts/check.py`，`plan_path` 指向待检终稿、`profile_path` 指向正式画像；JSON 内路径按输入 JSON 所在目录解析，建议使用绝对路径。in/out JSON 放 `.python-coach/tmp/`（契约见 `resources/check-contract.md`）。核对 Day「知识点」「前置」是否都在能力矩阵中、知识点是否误引能力行、结构字段是否齐备；**error 级问题 → 不落盘**，修订后重跑至无 error；warning 级问题 → 可落盘但修订说明里记录。
+4. **格式自检后写入**：调用 `scripts/page.py`，`plan_path` 指向待检终稿，任取一日确认字段可解析且 HTML 生成成功；自检副本（HTML/JSON）放 `.python-coach/tmp/`。自检通过且终稿已经学习者确认后，才写入 `.python-coach/state/plan.md`，恢复正式来源引用，置 `status: active`、`updated` = 今天，保留全部 Day 区块。自检副本完成即清；字段与解析规则以 `resources/data-formats.md` §1 与 `resources/page-contract.md` §5 为准。
 5. **approval 护栏**：`plan.md` 属持久层六件套，落盘/覆盖前先经学习者确认（SKILL.md 护栏 approval）。
 6. **覆盖语义**：`.python-coach/state/plan.md` 已有生效计划（学习者重走起步）→ 先说明将覆盖每日任务并置回 `active`（旧任务被替换；进度保留在 `progress.md`，不受影响），学习者确认后才写；仅改写任务清单与 `status`/`updated`，`goal`/`scope` 由 ticket 08 重走时决定。
 7. 落盘后简述：计划已生效、共 N 天，从 Day 1 开始；进入「会话开始」第 2 步（复习检查 → 当日执行）。

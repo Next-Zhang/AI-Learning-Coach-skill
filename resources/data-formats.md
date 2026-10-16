@@ -19,7 +19,7 @@
 **约定（决策 6/7/12）**
 
 - **六件套正式文件一律放 `.python-coach/state/`**：下表列出的 `plan.md`、`progress.md`、`profile.md`、`sources/`、`review/`、`review/schedule.md` 均指该目录内的文件。
-- **路径约定（决策 12）**：脚本默认路径值**不改**（`profile.md`、`plan.md`、`sources`、`review`、`review/schedule.md`）；使用阶段 agent **一律显式传** `.python-coach/state/…` 路径（相对当前工作区解析；输入 JSON 放在 `.python-coach/tmp/` 时，相对路径按输入文件所在目录解析，可传 `../state/…` 或绝对路径）。
+- **路径约定（决策 12）**：脚本默认路径值**不改**（`profile.md`、`plan.md`、`sources`、`review`、`review/schedule.md`）；使用阶段 agent 一律显式指定正式数据路径。CLI 的输入/输出文件路径相对于当前工作目录解析；**JSON 内的相对路径始终以输入 JSON 所在目录为基准**。输入 JSON 放在 `.python-coach/tmp/` 时，数据路径传 `../state/…` 或绝对路径；只有输入 JSON 位于工作区根目录时，才直接传 `.python-coach/state/…`。计划里的本地来源引用则相对于 `plan.md` 所在目录解析。
 - **过程文件生命周期（决策 6）**：起步与每日流程产生的过程文件（初始化 JSON、计划草稿/修订记录、评审出入包、`page.py` 自检副本、各脚本 in/out JSON）放 `.python-coach/tmp/`，**所属阶段完成即清**；会话结束时 `.python-coach/tmp/` 全清、`state/` 只剩六件套。清理为 agent 内部动作，**不需逐条向学习者确认**（**当日执行网页除外**——其删除必须学习者显式批准，见 SKILL.md 护栏 approval）。
 - **项目边界**：**当前项目 = 本工作区内的 `.python-coach/ + exercises/ + project/`**；其余目录（其他技能、`.git`、无关项目）一律不读不写。
 - **首次起步**：按 `templates/` 初始化六件套到 `.python-coach/state/`（模板路径不变）。
